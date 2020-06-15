@@ -170,11 +170,6 @@ func newXmpPropertyIndex() *XmpPropertyIndex {
 	return xpi
 }
 
-// TODO(dustin): !! Finish.
-// func (xpi *XmpPropertyIndex) dump() {
-
-// }
-
 func (xpi *XmpPropertyIndex) add(name XmpPropertyName, value interface{}) {
 	currentNodeName := name[0]
 	currentNodeNamePhrase := currentNodeName.String()
@@ -236,6 +231,25 @@ func (xpi *XmpPropertyIndex) get(namePhraseSlice []string) (results []interface{
 	return nil, ErrPropertyNotFound
 }
 
+func (xpi *XmpPropertyIndex) dump(prefix []string) {
+	for name, subindex := range xpi.subindices {
+		subindex.dump(append(prefix, name))
+	}
+
+	for name, values := range xpi.leaves {
+		fqName := append(prefix, name)
+		fqNamePhrase := strings.Join(fqName, ".")
+
+		for _, value := range values {
+			fmt.Printf("%s = [%s]\n", fqNamePhrase, value)
+		}
+	}
+}
+
+func (xpi *XmpPropertyIndex) Dump() {
+	xpi.dump([]string{})
+}
+
 // Parse parses the XMP document.
 func (xp *Parser) Parse() (err error) {
 	defer func() {
@@ -283,8 +297,6 @@ func (xp *Parser) Parse() (err error) {
 				continue
 			}
 
-			// fmt.Printf("Pushing: %s\n", t.Name)
-
 			xp.stack = append(xp.stack, XmlName(t.Name))
 		case xml.EndElement:
 			if t.Name == rdfTag {
@@ -314,14 +326,10 @@ func (xp *Parser) Parse() (err error) {
 				// TODO(dustin): !! We still need to parse the values to proper types.
 				valuePhrase := strings.Trim(string(*xp.lastCharData), "\r\n\t ")
 
-				// fmt.Printf("%s = [%s]\n", xpn, valuePhrase)
-
 				xpi.add(xpn, valuePhrase)
 
 				xp.lastCharData = nil
 			}
-
-			// fmt.Printf("Popping: %s\n", xp.stack[len(xp.stack)-1])
 
 			// Go already validates that the tags are balanced.
 			xp.stack = xp.stack[:len(xp.stack)-1]
@@ -400,17 +408,6 @@ func (xp *Parser) Parse() (err error) {
 		}
 
 	}
-
-	results, err := xpi.get([]string{"[x]xmpmeta", "[claro]Logging", "[rdf]Seq", "[rdf]li"})
-	log.PanicIf(err)
-
-	for _, value := range results {
-		fmt.Printf("VALUE=[%v]\n", value)
-	}
-
-	// xpi.dump()
-
-	// TODO(dustin): !! Finish.
 
 	return nil
 }

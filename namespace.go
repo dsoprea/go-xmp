@@ -1,18 +1,27 @@
 package xmp
 
+const (
+	// These are constants in order to support testing.
+
+	rdfNamespaceUri            = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xNamespaceUri              = "adobe:ns:meta/"
+	dcNamespaceUri             = "http://purl.org/dc/elements/1.1/"
+	microsoftPhotoNamespaceUri = "http://ns.microsoft.com/photo/1.0/"
+)
+
 var (
 	// knownPreferredNamespacePrefixes describes all of the recommended prefixes
 	// for the standard (and then some) XMP namespaces. This is largely found in
 	// the XMP Specification parts 1 and 2.
 	knownPreferredNamespacePrefixes = map[string]string{
 		// NOTE(dustin): gofmt odd alignment here
-		"http://www.w3.org/1999/02/22-rdf-syntax-ns#": "rdf",
-		"adobe:ns:meta/":                                 "x",
+		rdfNamespaceUri:                                  "rdf",
+		xNamespaceUri:                                    "x",
 		"http://ns.adobe.com/photoshop/1.0/":             "photoshop",
 		"http://ns.adobe.com/xap/1.0/mm/":                "xmpMM",
-		"http://purl.org/dc/elements/1.1/":               "dc",
+		dcNamespaceUri:                                   "dc",
 		"http://ns.adobe.com/xap/1.0/":                   "xmp",
-		"http://ns.microsoft.com/photo/1.0/":             "MicrosoftPhoto",
+		microsoftPhotoNamespaceUri:                       "MicrosoftPhoto",
 		"http://www.elpical.com/claro/synt1.0/":          "claro",
 		"http://ns.adobe.com/xap/1.0/bj/":                "xmpBJ",
 		"http://ns.adobe.com/xap/1.0/t/pg/":              "xmpTPg",

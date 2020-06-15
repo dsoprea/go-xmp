@@ -9,11 +9,6 @@ import (
 	"github.com/dsoprea/go-logging"
 )
 
-func TestNewParser(t *testing.T) {
-	// Not much else we can test at this juncture.
-	NewParser(nil)
-}
-
 func TestParser_Parse(t *testing.T) {
 	data := GetTestData()
 	b := bytes.NewBuffer(data)
@@ -22,7 +17,7 @@ func TestParser_Parse(t *testing.T) {
 	xpi, err := xp.Parse()
 	log.PanicIf(err)
 
-	actual, err := xpi.get([]string{"[x]xmpmeta", "[claro]Logging", "[rdf]Seq", "[rdf]li"})
+	actual, err := xpi.Get([]string{"[x]xmpmeta", "[claro]Logging", "[rdf]Seq", "[rdf]li"})
 	log.PanicIf(err)
 
 	expected := []interface{}{
@@ -56,5 +51,63 @@ func TestParser_Parse(t *testing.T) {
 		fmt.Printf("\n")
 
 		t.Fatalf("Values not correct.")
+	}
+}
+
+func TestRawAttributeAssignment_parse_doubleQuotes(t *testing.T) {
+	phrase := `aa="bb"`
+
+	name, value := rawAttributeAssignment(phrase).parse()
+
+	if name != "aa" {
+		t.Fatalf("Name not correct: [%s]", name)
+	} else if value != "bb" {
+		t.Fatalf("Value not correct: [%s]", value)
+	}
+}
+
+func TestRawAttributeAssignment_parse_singleQuotes(t *testing.T) {
+	phrase := `aa='bb'`
+
+	name, value := rawAttributeAssignment(phrase).parse()
+
+	if name != "aa" {
+		t.Fatalf("Name not correct: [%s]", name)
+	} else if value != "bb" {
+		t.Fatalf("Value not correct: [%s]", value)
+	}
+}
+
+func TestRawAttributeAssignment_parse_emptyValue(t *testing.T) {
+	phrase := `aa=""`
+
+	name, value := rawAttributeAssignment(phrase).parse()
+
+	if name != "aa" {
+		t.Fatalf("Name not correct: [%s]", name)
+	} else if value != "" {
+		t.Fatalf("Value not correct: [%s]", value)
+	}
+}
+
+func TestRawAttributeAssignment_parse_invalid(t *testing.T) {
+	phrase := `aa=`
+
+	name, value := rawAttributeAssignment(phrase).parse()
+
+	if name != "" {
+		t.Fatalf("Name should have been unparseable: [%s]", name)
+	} else if value != "" {
+		t.Fatalf("Value should have been unparseable: [%s]", value)
+	}
+}
+
+func TestNewParser(t *testing.T) {
+	p := NewParser(nil)
+
+	if p.xd == nil {
+		t.Fatalf("XML decoder not assigned.")
+	} else if len(p.stack) != 0 {
+		t.Fatalf("Stack not initialized or not empty.")
 	}
 }

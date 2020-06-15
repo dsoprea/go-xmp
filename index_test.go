@@ -92,12 +92,12 @@ func getTestIndex() *XmpPropertyIndex {
 
 	xpi.add(name, value)
 
-	name = XmpPropertyName{{xNamespaceUri, "xmpmeta"}, {microsoftPhotoNamespaceUri, "LastKeywordXMP"}, {rdfNamespaceUri, "Bag"}, {rdfNamespaceUri, "li"}}
+	name = XmpPropertyName{{xNamespaceUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordXMP"}, {rdfNamespaceUri, "Bag"}, {rdfNamespaceUri, "li"}}
 	value = "tag"
 
 	xpi.add(name, value)
 
-	name = XmpPropertyName{{xNamespaceUri, "xmpmeta"}, {microsoftPhotoNamespaceUri, "LastKeywordIPTC"}, {rdfNamespaceUri, "Bag"}, {rdfNamespaceUri, "li"}}
+	name = XmpPropertyName{{xNamespaceUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordIPTC"}, {rdfNamespaceUri, "Bag"}, {rdfNamespaceUri, "li"}}
 	value = "tag"
 
 	xpi.add(name, value)

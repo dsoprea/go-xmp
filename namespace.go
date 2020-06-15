@@ -1,12 +1,22 @@
 package xmp
 
 const (
-	// These are constants in order to support testing.
-
 	rdfNamespaceUri            = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 	xNamespaceUri              = "adobe:ns:meta/"
+	photoshopNamespaceUri      = "http://ns.adobe.com/photoshop/1.0/"
+	xmpmmNamespaceUri          = "http://ns.adobe.com/xap/1.0/mm/"
 	dcNamespaceUri             = "http://purl.org/dc/elements/1.1/"
-	microsoftPhotoNamespaceUri = "http://ns.microsoft.com/photo/1.0/"
+	xmpNamespaceUri            = "http://ns.adobe.com/xap/1.0/"
+	microsoftphotoNamespaceUri = "http://ns.microsoft.com/photo/1.0/"
+	claroNamespaceUri          = "http://www.elpical.com/claro/synt1.0/"
+	xmpbjNamespaceUri          = "http://ns.adobe.com/xap/1.0/bj/"
+	xmptpgNamespaceUri         = "http://ns.adobe.com/xap/1.0/t/pg/"
+	xmpdmNamespaceUri          = "http://ns.adobe.com/xmp/1.0/DynamicMedia/"
+	pdfNamespaceUri            = "http://ns.adobe.com/pdf/1.3/"
+	crsNamespaceUri            = "http://ns.adobe.com/camera-raw-settings/1.0/"
+	strefNamespaceUri          = "http://ns.adobe.com/xap/1.0/sType/ResourceRef#"
+	xmprightsNamespaceUri      = "http://ns.adobe.com/xap/1.0/rights/"
+	xmpidqNamespaceUri         = "http://ns.adobe.com/xmp/Identifier/qual/1.0/"
 )
 
 var (
@@ -15,22 +25,22 @@ var (
 	// the XMP Specification parts 1 and 2.
 	knownPreferredNamespacePrefixes = map[string]string{
 		// NOTE(dustin): gofmt odd alignment here
-		rdfNamespaceUri:                                  "rdf",
-		xNamespaceUri:                                    "x",
-		"http://ns.adobe.com/photoshop/1.0/":             "photoshop",
-		"http://ns.adobe.com/xap/1.0/mm/":                "xmpMM",
-		dcNamespaceUri:                                   "dc",
-		"http://ns.adobe.com/xap/1.0/":                   "xmp",
-		microsoftPhotoNamespaceUri:                       "MicrosoftPhoto",
-		"http://www.elpical.com/claro/synt1.0/":          "claro",
-		"http://ns.adobe.com/xap/1.0/bj/":                "xmpBJ",
-		"http://ns.adobe.com/xap/1.0/t/pg/":              "xmpTPg",
-		"http://ns.adobe.com/xmp/1.0/DynamicMedia/":      "xmpDM",
-		"http://ns.adobe.com/pdf/1.3/":                   "pdf",
-		"http://ns.adobe.com/camera-raw-settings/1.0/":   "crs",
-		"http://ns.adobe.com/xap/1.0/sType/ResourceRef#": "stRef",
-		"http://ns.adobe.com/xap/1.0/rights/":            "xmpRights",
-		"http://ns.adobe.com/xmp/Identifier/qual/1.0/":   "xmpidq",
+		rdfNamespaceUri:            "rdf",
+		xNamespaceUri:              "x",
+		photoshopNamespaceUri:      "photoshop",
+		xmpmmNamespaceUri:          "xmpMM",
+		dcNamespaceUri:             "dc",
+		xmpNamespaceUri:            "xmp",
+		microsoftphotoNamespaceUri: "MicrosoftPhoto",
+		claroNamespaceUri:          "claro",
+		xmpbjNamespaceUri:          "xmpBJ",
+		xmptpgNamespaceUri:         "xmpTPg",
+		xmpdmNamespaceUri:          "xmpDM",
+		pdfNamespaceUri:            "pdf",
+		crsNamespaceUri:            "crs",
+		strefNamespaceUri:          "stRef",
+		xmprightsNamespaceUri:      "xmpRights",
+		xmpidqNamespaceUri:         "xmpidq",
 	}
 )
 

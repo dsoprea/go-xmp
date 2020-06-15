@@ -6,7 +6,10 @@ import (
 	"reflect"
 	"testing"
 
+	"encoding/xml"
+
 	"github.com/dsoprea/go-logging"
+	"github.com/dsoprea/go-unicode-byteorder"
 )
 
 func TestParser_Parse(t *testing.T) {
@@ -109,5 +112,124 @@ func TestNewParser(t *testing.T) {
 		t.Fatalf("XML decoder not assigned.")
 	} else if len(p.stack) != 0 {
 		t.Fatalf("Stack not initialized or not empty.")
+	}
+}
+
+func TestParser_parseStartElementToken(t *testing.T) {
+	xp := NewParser(nil)
+
+	name := xml.Name{
+		Space: "aa",
+		Local: "bb",
+	}
+
+	err := xp.parseStartElementToken(nil, xml.StartElement{Name: name})
+	log.PanicIf(err)
+
+	expected := []XmlName{XmlName(name)}
+
+	if reflect.DeepEqual(xp.stack, expected) != true {
+		t.Fatalf("Stack not correct.")
+	}
+}
+
+func TestParser_parseEndElementToken(t *testing.T) {
+	xp := NewParser(nil)
+
+	xp.rdfIsOpen = true
+	xp.rdfDescriptionIsOpen = true
+
+	name := xml.Name{
+		Space: "aa",
+		Local: "bb",
+	}
+
+	err := xp.parseStartElementToken(nil, xml.StartElement{Name: name})
+	log.PanicIf(err)
+
+	if len(xp.stack) != 1 {
+		t.Fatalf("Stack should have one item.")
+	}
+
+	err = xp.parseEndElementToken(nil, xml.EndElement{Name: name})
+	log.PanicIf(err)
+
+	if len(xp.stack) != 0 {
+		t.Fatalf("Stack should be empty.")
+	}
+}
+
+func TestParser_parseCharDataToken(t *testing.T) {
+	xp := NewParser(nil)
+
+	xp.rdfIsOpen = true
+	xp.rdfDescriptionIsOpen = true
+
+	charData := xml.CharData("some data")
+
+	err := xp.parseCharDataToken(nil, charData, nil)
+	log.PanicIf(err)
+
+	if *xp.lastCharData != "some data" {
+		t.Fatalf("Character data not stashed correctly: [%s]", *xp.lastCharData)
+	}
+}
+
+func TestParser_parseEndElementToken_pushToIndex(t *testing.T) {
+	xp := NewParser(nil)
+
+	xp.rdfIsOpen = true
+	xp.rdfDescriptionIsOpen = true
+
+	name := xml.Name{
+		Space: "aa",
+		Local: "bb",
+	}
+
+	xpi := newXmpPropertyIndex()
+
+	err := xp.parseStartElementToken(xpi, xml.StartElement{Name: name})
+	log.PanicIf(err)
+
+	charData := xml.CharData("some data")
+
+	err = xp.parseCharDataToken(xpi, charData, nil)
+	log.PanicIf(err)
+
+	if xpi.Count() != 0 {
+		t.Fatalf("XPI should be empty prior to close.")
+	}
+
+	err = xp.parseEndElementToken(xpi, xml.EndElement{Name: name})
+	log.PanicIf(err)
+
+	if xpi.Count() != 1 {
+		t.Fatalf("XPI should have one item after close.")
+	}
+
+	results, err := xpi.Get([]string{"[?]bb"})
+	log.PanicIf(err)
+
+	expected := []interface{}{
+		"some data",
+	}
+
+	if reflect.DeepEqual(results, expected) != true {
+		t.Fatalf("Results not correct: %v", results)
+	}
+}
+
+func TestParser_parseProcInstToken(t *testing.T) {
+	xp := NewParser(nil)
+
+	err := xp.parseProcInstToken(nil, xml.ProcInst{Target: "xpacket", Inst: []byte("begin=\"\uFEFF\" id=\"W5M0MpCehiHzreSzNTczkc9d\"")})
+	log.PanicIf(err)
+
+	if xp.packetIsOpen != true {
+		t.Fatalf("Expected packetIsOpen to be true.")
+	} else if xp.bomEncoding != bom.Utf8Encoding {
+		t.Fatalf("bomEncoding not correct: 0x%x", xp.bomEncoding)
+	} else if xp.bomByteOrder != nil {
+		t.Fatalf("Byte-order not correct: [%v]", xp.bomByteOrder)
 	}
 }

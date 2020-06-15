@@ -166,6 +166,10 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 		return nil
 	}
 
+	if xp.rdfDescriptionIsOpen == false {
+		return nil
+	}
+
 	// Process any stash char-data. Since this is cleared whenever we
 	// encounter a start-tag, this tells us that we were a leaf/scalar
 	// node.

@@ -103,6 +103,12 @@ func (xpi *XmpPropertyIndex) add(name XmpPropertyName, value interface{}) {
 // Get searches the index for the property with the name represented by the
 // string slice.
 func (xpi *XmpPropertyIndex) Get(namePhraseSlice []string) (results []interface{}, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
 	currentNodeNamePhrase := namePhraseSlice[0]
 
 	if len(namePhraseSlice) > 1 {

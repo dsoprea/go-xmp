@@ -1,7 +1,8 @@
 package xmpnamespace
 
 const (
-	// DcUri is the 'dc' URI made a constant to support testing.
+	// DcUri is the 'dc' (Dublin Core) namespace URI made a constant to support
+	// testing.
 	DcUri = "http://purl.org/dc/elements/1.1/"
 )
 

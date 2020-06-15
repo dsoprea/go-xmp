@@ -3,6 +3,8 @@ package xmpnamespace
 import (
 	"errors"
 
+	"encoding/xml"
+
 	"github.com/dsoprea/go-logging"
 )
 
@@ -10,6 +12,10 @@ var (
 	// ErrNamespaceNotFound indicates that a namespace was requested that is
 	// not registered.
 	ErrNamespaceNotFound = errors.New("namespace not found")
+
+	// ErrFieldNotFound indicates that a field was not found for a specific
+	// namespace.
+	ErrFieldNotFound = errors.New("field not found")
 )
 
 // Namespace describes the information about a single namespace.
@@ -27,7 +33,7 @@ type Namespace struct {
 }
 
 var (
-	namespaces map[string]Namespace
+	namespaces = make(map[string]Namespace)
 )
 
 func register(namespace Namespace) {
@@ -50,12 +56,62 @@ func Get(uri string) (namespace Namespace, err error) {
 	namespace, found := namespaces[uri]
 
 	if found == false {
-		return namespace, ErrNamespaceNotFound
+		return Namespace{}, ErrNamespaceNotFound
 	}
 
 	return namespace, nil
 }
 
-func init() {
-	namespaces = make(map[string]Namespace)
+// MustGet returns the Namespace struct associated with the given URI. It panics
+// if not known.
+func MustGet(uri string) (namespace Namespace) {
+	namespace, err := Get(uri)
+	log.PanicIf(err)
+
+	return namespace
+}
+
+var (
+	cachedLookups = make(map[xml.Name]FieldType)
+)
+
+// GetFieldType returns the field-type for a specific `xml.Name`.
+func GetFieldType(name xml.Name) (ft FieldType, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	ft, found := cachedLookups[name]
+	if found == true {
+		return ft, nil
+	}
+
+	namespace, err := Get(name.Space)
+	if err != nil {
+		if err == ErrNamespaceNotFound {
+			return 0, err
+		}
+
+		log.Panic(err)
+	}
+
+	ft, found = namespace.Fields[name.Local]
+	if found == false {
+		return ft, ErrFieldNotFound
+	}
+
+	cachedLookups[name] = ft
+
+	return ft, nil
+}
+
+// MustGetFieldType returns the field-type for a specific `xml.Name`. It panics
+// if not known.
+func MustGetFieldType(name xml.Name) (ft FieldType) {
+	ft, err := GetFieldType(name)
+	log.PanicIf(err)
+
+	return ft
 }

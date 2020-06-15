@@ -5,6 +5,8 @@ import (
 	"testing"
 
 	"github.com/dsoprea/go-logging"
+
+	"github.com/dsoprea/go-xmp/namespace"
 )
 
 func TestXmlName_String_Known(t *testing.T) {
@@ -72,32 +74,32 @@ func TestNewXmpPropertyIndex(t *testing.T) {
 func getTestIndex() *XmpPropertyIndex {
 	xpi := newXmpPropertyIndex()
 
-	name := XmpPropertyName{{xNamespaceUri, "xmpmeta"}, {dcNamespaceUri, "title"}, {rdfNamespaceUri, "Alt"}, {rdfNamespaceUri, "li"}}
+	name := XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "title"}, {xmpnamespace.RdfUri, "Alt"}, {xmpnamespace.RdfUri, "li"}}
 	value := "Der Goalie bin ig"
 
 	xpi.add(name, value)
 
-	name = XmpPropertyName{{xNamespaceUri, "xmpmeta"}, {dcNamespaceUri, "description"}, {rdfNamespaceUri, "Alt"}, {rdfNamespaceUri, "li"}}
+	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "description"}, {xmpnamespace.RdfUri, "Alt"}, {xmpnamespace.RdfUri, "li"}}
 	value = "Der Goalie bin ig"
 
 	xpi.add(name, value)
 
-	name = XmpPropertyName{{xNamespaceUri, "xmpmeta"}, {dcNamespaceUri, "creator"}, {rdfNamespaceUri, "Seq"}, {rdfNamespaceUri, "li"}}
+	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "creator"}, {xmpnamespace.RdfUri, "Seq"}, {xmpnamespace.RdfUri, "li"}}
 	value = "CREDIT"
 
 	xpi.add(name, value)
 
-	name = XmpPropertyName{{xNamespaceUri, "xmpmeta"}, {dcNamespaceUri, "subject"}, {rdfNamespaceUri, "Bag"}, {rdfNamespaceUri, "li"}}
+	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "subject"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
 	value = "tag"
 
 	xpi.add(name, value)
 
-	name = XmpPropertyName{{xNamespaceUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordXMP"}, {rdfNamespaceUri, "Bag"}, {rdfNamespaceUri, "li"}}
+	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordXMP"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
 	value = "tag"
 
 	xpi.add(name, value)
 
-	name = XmpPropertyName{{xNamespaceUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordIPTC"}, {rdfNamespaceUri, "Bag"}, {rdfNamespaceUri, "li"}}
+	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordIPTC"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
 	value = "tag"
 
 	xpi.add(name, value)

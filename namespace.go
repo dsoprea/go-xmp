@@ -1,6 +1,9 @@
 package xmp
 
 var (
+	// knownPreferredNamespacePrefixes describes all of the recommended prefixes
+	// for the standard (and then some) XMP namespaces. This is largely found in
+	// the XMP Specification parts 1 and 2.
 	knownPreferredNamespacePrefixes = map[string]string{
 		// NOTE(dustin): gofmt odd alignment here
 		"http://www.w3.org/1999/02/22-rdf-syntax-ns#": "rdf",
@@ -22,6 +25,9 @@ var (
 	}
 )
 
+// LookupPreferredNamespacePrefix looks for the common prefix associated with
+// the given namespace (namespaces are very strictly named, so normalization is
+// not required). Returns an empty-string if not found.
 func LookupPreferredNamespacePrefix(namespace string) string {
 	return knownPreferredNamespacePrefixes[namespace]
 }

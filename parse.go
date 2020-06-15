@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 
+	"encoding/binary"
 	"encoding/xml"
 
 	"github.com/dsoprea/go-logging"
@@ -44,11 +45,9 @@ type rawAttributeAssignment string
 // Parse will return a name and value if the string looks like
 // 'name="value"'. Else, nil.
 func (raa rawAttributeAssignment) Parse() (string, string) {
-	len_ := len(raa)
-
 	// At least one character in the name, the equals, and the quote characters
 	// on the value.
-	if len_ < 4 {
+	if len(raa) < 4 {
 		return "", ""
 	}
 
@@ -92,7 +91,8 @@ type Parser struct {
 
 	// TODO(dustin): !! Add an accessor for this. Investigate whether we even have this value in our test-data.
 	// encodingSequence will be nil if xpacket has empty "start" value.
-	encodingSequence bom.Sequence
+	bomEncoding  bom.Encoding
+	bomByteOrder binary.ByteOrder
 
 	packetIsOpen         bool
 	rdfIsOpen            bool
@@ -117,6 +117,7 @@ func NewParser(r io.Reader) *Parser {
 	}
 }
 
+// XmlName is a localized version of xml.Name with a String() method attached.
 type XmlName xml.Name
 
 func (xn XmlName) String() string {
@@ -130,8 +131,11 @@ func (xn XmlName) String() string {
 	return fmt.Sprintf("[%s]%s", prefix, xn.Local)
 }
 
+// XmpPropertyName is a series of constituent parts comprising a property's
+// fully-qualified name.
 type XmpPropertyName []XmlName
 
+// Parts returns a slice of stringifications of the constituent names.
 func (xpn XmpPropertyName) Parts() (parts []string) {
 	parts = make([]string, len(xpn))
 	for i, tag := range xpn {
@@ -153,6 +157,7 @@ func (xpn XmpPropertyName) String() string {
 	return strings.Join(parts, ".")
 }
 
+// XmpPropertyIndex allows for lookups and browsing of found properties.
 type XmpPropertyIndex struct {
 	subindices map[string]*XmpPropertyIndex
 	leaves     map[string][]interface{}
@@ -206,20 +211,22 @@ func (xpi *XmpPropertyIndex) get(namePhraseSlice []string) (results []interface{
 	currentNodeNamePhrase := namePhraseSlice[0]
 
 	if len(namePhraseSlice) > 1 {
-		if subindex, found := xpi.subindices[currentNodeNamePhrase]; found == false {
-			return nil, ErrPropertyNotFound
-		} else {
-			values, err := subindex.get(namePhraseSlice[1:])
-			if err != nil {
-				if err == ErrPropertyNotFound {
-					return nil, err
-				}
+		subindex, found := xpi.subindices[currentNodeNamePhrase]
 
-				log.Panic(err)
+		if found == false {
+			return nil, ErrPropertyNotFound
+		}
+
+		values, err := subindex.get(namePhraseSlice[1:])
+		if err != nil {
+			if err == ErrPropertyNotFound {
+				return nil, err
 			}
 
-			return values, nil
+			log.Panic(err)
 		}
+
+		return values, nil
 	}
 
 	// If we get here, we are expecting to find a leaf-node.
@@ -246,19 +253,229 @@ func (xpi *XmpPropertyIndex) dump(prefix []string) {
 	}
 }
 
+// Dump prints all of the properties in the index.
 func (xpi *XmpPropertyIndex) Dump() {
 	xpi.dump([]string{})
 }
 
-// Parse parses the XMP document.
-func (xp *Parser) Parse() (err error) {
+func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartElement) (err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
 		}
 	}()
 
-	xpi := newXmpPropertyIndex()
+	xp.lastCharData = nil
+
+	if t.Name == rdfTag {
+		if xp.rdfIsOpen == true {
+			log.Panicf("RDF is already open")
+		}
+
+		xp.rdfIsOpen = true
+
+		return nil
+	} else if t.Name == rdfDescriptionTag {
+		if xp.rdfDescriptionIsOpen == true {
+			log.Panicf("RDF description is already open")
+		}
+
+		xp.rdfDescriptionIsOpen = true
+
+		return nil
+	}
+
+	xp.stack = append(xp.stack, XmlName(t.Name))
+
+	return nil
+}
+
+func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	if t.Name == rdfTag {
+		if xp.rdfIsOpen == false {
+			log.Panicf("RDF is not open")
+		}
+
+		xp.rdfIsOpen = false
+
+		return nil
+	} else if t.Name == rdfDescriptionTag {
+		if xp.rdfDescriptionIsOpen == false {
+			log.Panicf("RDF description is not open")
+		}
+
+		xp.rdfDescriptionIsOpen = false
+
+		return nil
+	}
+
+	// Process any stash char-data. Since this is cleared whenever we
+	// encounter a start-tag, this tells us that we were a leaf/scalar
+	// node.
+	if xp.lastCharData != nil {
+		xpn := XmpPropertyName(xp.stack)
+
+		// TODO(dustin): !! We still need to parse the values to proper types.
+		valuePhrase := strings.Trim(string(*xp.lastCharData), "\r\n\t ")
+
+		xpi.add(xpn, valuePhrase)
+
+		xp.lastCharData = nil
+	}
+
+	// Go already validates that the tags are balanced.
+	xp.stack = xp.stack[:len(xp.stack)-1]
+
+	return nil
+}
+
+func (xp *Parser) parseCharDataToken(xpi *XmpPropertyIndex, t xml.CharData, lastToken xml.Token) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	// Scope any intermediate nodes that we don't care about (like "
+	// xmpmeta"-space tags).
+	if xp.rdfDescriptionIsOpen == false {
+		return nil
+	}
+
+	// Ignore any character data between adjacent closing-tags. We only
+	// want character-data between an open and a close tag (leaf/scalar
+	// nodes).
+	if _, ok := lastToken.(xml.EndElement); ok == true {
+		return nil
+	}
+
+	// We only care about char-data for leaf nodes. So, we'll
+	// temporarily stash it, we'll always clear stashed char-data when
+	// we encounter a start-tag, and then process any stashed data when
+	// we encounter a stop-tag.
+	value := string(t)
+	xp.lastCharData = &value
+
+	return nil
+}
+
+func (xp *Parser) parseProcInstToken(xpi *XmpPropertyIndex, t xml.ProcInst) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	if t.Target != "xpacket" {
+		return nil
+	}
+
+	fragment := string(t.Inst)
+	parts := strings.Split(fragment, " ")
+
+	if xp.packetIsOpen == false {
+		xp.packetIsOpen = true
+
+		foundBegin := false
+		foundId := false
+
+		for _, part := range parts {
+			raa := rawAttributeAssignment(part)
+			name, value := raa.Parse()
+
+			if name == "begin" {
+				foundBegin = true
+
+				if len(value) == 0 {
+					// NOTE(dustin): Currently clearing this, though we might later recommend that the user use a new struct to process each subsequence xpacket, but keeping this just in case a) they don't listen, or b) we decide to support that method.
+					// NOTE(dustin): <-- No current way for the user to know where we are in the stream upon return.
+					xp.bomEncoding = 0
+					xp.bomByteOrder = nil
+				} else {
+					encoding, byteOrder, err := bom.GetEncoding([]byte(value))
+					log.PanicIf(err)
+
+					xp.bomEncoding = encoding
+					xp.bomByteOrder = byteOrder
+				}
+			} else if name == "id" {
+				foundId = true
+
+				if value != standardXpacketId {
+					log.Panicf("xpacket ID not expected: [%s]", value)
+				}
+			}
+		}
+
+		if foundBegin == false || foundId == false {
+			log.Panicf("'begin' or 'id' attributes of xpacket tag missing")
+		}
+	} else {
+		// We don't currently do anything on the closing tag.
+
+		xp.packetIsOpen = false
+	}
+
+	return nil
+}
+
+func (xp *Parser) parseToken(xpi *XmpPropertyIndex, token xml.Token) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	// We do our last-token management here since many of the conditionals
+	// below will skip and continue.
+	lastToken := xp.lastToken
+	xp.lastToken = token
+
+	switch t := token.(type) {
+	case xml.StartElement:
+		err := xp.parseStartElementToken(xpi, t)
+		log.PanicIf(err)
+
+		return nil
+
+	case xml.EndElement:
+		err := xp.parseEndElementToken(xpi, t)
+		log.PanicIf(err)
+
+		return nil
+
+	case xml.CharData:
+
+		err := xp.parseCharDataToken(xpi, t, lastToken)
+		log.PanicIf(err)
+
+		return nil
+
+	case xml.ProcInst:
+		err := xp.parseProcInstToken(xpi, t)
+		log.PanicIf(err)
+
+		return nil
+	}
+
+	return nil
+}
+
+// Parse parses the XMP document.
+func (xp *Parser) Parse() (xpi *XmpPropertyIndex, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	xpi = newXmpPropertyIndex()
 
 	for {
 		token, err := xp.xd.Token()
@@ -270,144 +487,9 @@ func (xp *Parser) Parse() (err error) {
 			log.Panic(err)
 		}
 
-		// We do our last-token management here since many of the conditionals
-		// below will skip and continue.
-		lastToken := xp.lastToken
-		xp.lastToken = token
-
-		switch t := token.(type) {
-		case xml.StartElement:
-			xp.lastCharData = nil
-
-			if t.Name == rdfTag {
-				if xp.rdfIsOpen == true {
-					log.Panicf("RDF is already open")
-				}
-
-				xp.rdfIsOpen = true
-
-				continue
-			} else if t.Name == rdfDescriptionTag {
-				if xp.rdfDescriptionIsOpen == true {
-					log.Panicf("RDF description is already open")
-				}
-
-				xp.rdfDescriptionIsOpen = true
-
-				continue
-			}
-
-			xp.stack = append(xp.stack, XmlName(t.Name))
-		case xml.EndElement:
-			if t.Name == rdfTag {
-				if xp.rdfIsOpen == false {
-					log.Panicf("RDF is not open")
-				}
-
-				xp.rdfIsOpen = false
-
-				continue
-			} else if t.Name == rdfDescriptionTag {
-				if xp.rdfDescriptionIsOpen == false {
-					log.Panicf("RDF description is not open")
-				}
-
-				xp.rdfDescriptionIsOpen = false
-
-				continue
-			}
-
-			// Process any stash char-data. Since this is cleared whenever we
-			// encounter a start-tag, this tells us that we were a leaf/scalar
-			// node.
-			if xp.lastCharData != nil {
-				xpn := XmpPropertyName(xp.stack)
-
-				// TODO(dustin): !! We still need to parse the values to proper types.
-				valuePhrase := strings.Trim(string(*xp.lastCharData), "\r\n\t ")
-
-				xpi.add(xpn, valuePhrase)
-
-				xp.lastCharData = nil
-			}
-
-			// Go already validates that the tags are balanced.
-			xp.stack = xp.stack[:len(xp.stack)-1]
-
-		case xml.CharData:
-
-			// Scope any intermediate nodes that we don't care about (like "
-			// xmpmeta"-space tags).
-			if xp.rdfDescriptionIsOpen == false {
-				continue
-			}
-
-			// Ignore any character data between adjacent closing-tags. We only
-			// want character-data between an open and a close tag (leaf/scalar
-			// nodes).
-			if _, ok := lastToken.(xml.EndElement); ok == true {
-				continue
-			}
-
-			// We only care about char-data for leaf nodes. So, we'll
-			// temporarily stash it, we'll always clear stashed char-data when
-			// we encounter a start-tag, and then process any stashed data when
-			// we encounter a stop-tag.
-			value := string(t)
-			xp.lastCharData = &value
-		case xml.ProcInst:
-			if t.Target != "xpacket" {
-				continue
-			}
-
-			fragment := string(t.Inst)
-			parts := strings.Split(fragment, " ")
-
-			if xp.packetIsOpen == false {
-				xp.packetIsOpen = true
-
-				foundBegin := false
-				foundId := false
-
-				for _, part := range parts {
-					raa := rawAttributeAssignment(part)
-					name, value := raa.Parse()
-
-					if name == "begin" {
-						foundBegin = true
-
-						if len(value) == 0 {
-							// NOTE(dustin): Currently clearing this, though we might later recommend that the user use a new struct to process each subsequence xpacket, but keeping this just in case a) they don't listen, or b) we decide to support that method.
-							// NOTE(dustin): <-- No current way for the user to know where we are in the stream upon return.
-							xp.encodingSequence = nil
-						} else {
-							bs := bom.Sequence(value)
-
-							_, _, err := bs.GetEncoding()
-							log.PanicIf(err)
-
-							xp.encodingSequence = bs
-						}
-					} else if name == "id" {
-						foundId = true
-
-						if value != standardXpacketId {
-							log.Panicf("xpacket ID not expected: [%s]", value)
-						}
-					}
-				}
-
-				if foundBegin == false || foundId == false {
-					log.Panicf("'begin' or 'id' attributes of xpacket tag missing")
-				}
-			} else {
-				// We don't currently do anything on the closing tag.
-
-				xp.packetIsOpen = false
-			}
-		}
-
+		err = xp.parseToken(xpi, token)
+		log.PanicIf(err)
 	}
 
-	return nil
+	return xpi, nil
 }

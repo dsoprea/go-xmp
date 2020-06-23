@@ -29,7 +29,7 @@ type Namespace struct {
 	PreferredPrefix string
 
 	// Fields is a mapping of field names to types.
-	Fields map[string]FieldType
+	Fields map[string]interface{}
 }
 
 var (
@@ -66,17 +66,19 @@ func Get(uri string) (namespace Namespace, err error) {
 // if not known.
 func MustGet(uri string) (namespace Namespace) {
 	namespace, err := Get(uri)
-	log.PanicIf(err)
+	if err != nil {
+		panic(err)
+	}
 
 	return namespace
 }
 
 var (
-	cachedLookups = make(map[xml.Name]FieldType)
+	cachedLookups = make(map[xml.Name]interface{})
 )
 
 // GetFieldType returns the field-type for a specific `xml.Name`.
-func GetFieldType(name xml.Name) (ft FieldType, err error) {
+func GetFieldType(name xml.Name) (ft interface{}, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -109,7 +111,7 @@ func GetFieldType(name xml.Name) (ft FieldType, err error) {
 
 // MustGetFieldType returns the field-type for a specific `xml.Name`. It panics
 // if not known.
-func MustGetFieldType(name xml.Name) (ft FieldType) {
+func MustGetFieldType(name xml.Name) (ft interface{}) {
 	ft, err := GetFieldType(name)
 	log.PanicIf(err)
 

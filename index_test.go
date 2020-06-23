@@ -74,6 +74,8 @@ func TestNewXmpPropertyIndex(t *testing.T) {
 func getTestIndex() *XmpPropertyIndex {
 	xpi := newXmpPropertyIndex()
 
+	microsoftphotoNamespaceUri := "http://ns.microsoft.com/photo/1.0/"
+
 	name := XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "title"}, {xmpnamespace.RdfUri, "Alt"}, {xmpnamespace.RdfUri, "li"}}
 	value := "Der Goalie bin ig"
 

@@ -8,6 +8,12 @@ import (
 	"encoding/xml"
 
 	"github.com/dsoprea/go-logging"
+
+	"github.com/dsoprea/go-xmp/namespace"
+)
+
+var (
+	indexLogger = log.NewLogger("xmp.index")
 )
 
 var (
@@ -20,11 +26,19 @@ var (
 type XmlName xml.Name
 
 func (xn XmlName) String() string {
-	prefix := LookupPreferredNamespacePrefix(xn.Space)
-	if prefix == "" {
+	var prefix string
+
+	ns, err := xmpnamespace.Get(xn.Space)
+	if err != nil {
 		// They should notify us of the unknown namespace so that we
 		// can register it and they can handle it properly.
+
+		indexLogger.Warningf(nil, "Namespace [%s] is not registered.", xn.Space)
+		fmt.Printf("Namespace [%s] is not registered.\n", xn.Space)
+
 		prefix = "?"
+	} else {
+		prefix = ns.PreferredPrefix
 	}
 
 	return fmt.Sprintf("[%s]%s", prefix, xn.Local)
@@ -38,14 +52,7 @@ type XmpPropertyName []XmlName
 func (xpn XmpPropertyName) Parts() (parts []string) {
 	parts = make([]string, len(xpn))
 	for i, tag := range xpn {
-		prefix := LookupPreferredNamespacePrefix(tag.Space)
-		if prefix == "" {
-			// They should notify us of the unknown namespace so that we
-			// can register it and they can handle it properly.
-			prefix = "?"
-		}
-
-		parts[i] = fmt.Sprintf("[%s]%s", prefix, tag.Local)
+		parts[i] = tag.String()
 	}
 
 	return parts

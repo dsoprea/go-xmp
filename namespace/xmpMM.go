@@ -1,5 +1,9 @@
 package xmpnamespace
 
+import (
+	"github.com/dsoprea/go-xmp/type"
+)
+
 const (
 	// XmpMmUri is the 'xmpMM' namespace URI made a constant to support
 	// testing.
@@ -10,29 +14,29 @@ func init() {
 	namespace := Namespace{
 		Uri:             XmpMmUri,
 		PreferredPrefix: "xmpMM",
-		Fields: map[string]FieldType{
-			"DerivedFrom": ResourceRefFieldType,
-			"DocumentID":  GuidFieldType,
+		Fields: map[string]interface{}{
+			"DerivedFrom": xmptype.ResourceRefFieldType{},
+			"DocumentID":  xmptype.GuidFieldType{},
 
 			// TODO(dustin): ResourceEventFieldType type is not current implemented. Return to this.
 			// 			"History": ResourceEventFieldType,
 
-			"Ingredients":    ResourceRefFieldType,
-			"ManagedFrom":    ResourceRefFieldType,
-			"Manager":        AgentNameFieldType,
-			"ManageTo":       UriFieldType,
-			"ManageUI":       UriFieldType,
-			"ManagerVariant": TextFieldType,
+			"Ingredients":    xmptype.ResourceRefFieldType{},
+			"ManagedFrom":    xmptype.ResourceRefFieldType{},
+			"Manager":        xmptype.AgentNameFieldType{},
+			"ManageTo":       xmptype.UriFieldType{},
+			"ManageUI":       xmptype.UriFieldType{},
+			"ManagerVariant": xmptype.TextFieldType{},
 
-			"InstanceID":         GuidFieldType,
-			"OriginalDocumentID": GuidFieldType,
+			"InstanceID":         xmptype.GuidFieldType{},
+			"OriginalDocumentID": xmptype.GuidFieldType{},
 
 			// Not implemented due to non-strict nature.
 			// "Pantry":,
 
-			"RenditionClass":  RenditionClassFieldType,
-			"RenditionParams": TextFieldType,
-			"VersionID":       TextFieldType,
+			"RenditionClass":  xmptype.RenditionClassFieldType{},
+			"RenditionParams": xmptype.TextFieldType{},
+			"VersionID":       xmptype.TextFieldType{},
 
 			// Not implemented due to irrelevancy because of how we handle values.
 			// "Versions":

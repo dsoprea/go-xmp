@@ -1,5 +1,9 @@
 package xmpnamespace
 
+import (
+	"github.com/dsoprea/go-xmp/type"
+)
+
 const (
 	// XmpidqUri is the 'xmpidq' namespace URI made a constant to support
 	// testing.
@@ -10,8 +14,8 @@ func init() {
 	namespace := Namespace{
 		Uri:             XmpidqUri,
 		PreferredPrefix: "xmpidq",
-		Fields: map[string]FieldType{
-			"Scheme": TextFieldType,
+		Fields: map[string]interface{}{
+			"Scheme": xmptype.TextFieldType{},
 		},
 	}
 

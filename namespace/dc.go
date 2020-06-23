@@ -1,5 +1,9 @@
 package xmpnamespace
 
+import (
+	"github.com/dsoprea/go-xmp/type"
+)
+
 const (
 	// DcUri is the 'dc' (Dublin Core) namespace URI made a constant to support
 	// testing.
@@ -10,22 +14,31 @@ func init() {
 	namespace := Namespace{
 		Uri:             DcUri,
 		PreferredPrefix: "dc",
-		Fields: map[string]FieldType{
-			"contributor": ProperNameFieldType,
-			"coverage":    TextFieldType,
-			"creator":     ProperNameFieldType,
-			"date":        DateFieldType,
-			"description": LanguageAlternativeFieldType,
-			"format":      MimeTypeFieldType,
-			"identifier":  TextFieldType,
-			"language":    LocaleFieldType,
-			"publisher":   ProperNameFieldType,
-			"relation":    TextFieldType,
-			"rights":      LanguageAlternativeFieldType,
-			"source":      TextFieldType,
-			"subject":     TextFieldType,
-			"title":       LanguageAlternativeFieldType,
-			"type":        TextFieldType,
+		Fields: map[string]interface{}{
+			"contributor": xmptype.ProperNameFieldType{},
+			"coverage":    xmptype.TextFieldType{},
+			"creator":     xmptype.ProperNameFieldType{},
+			"date":        xmptype.DateFieldType{},
+
+			// TODO(dustin): Let's revisit once we can write a unit-test for it.
+			// "description": xmptype.LanguageAlternativeFieldType{},
+
+			"format":     xmptype.MimeTypeFieldType{},
+			"identifier": xmptype.TextFieldType{},
+			"language":   xmptype.LocaleFieldType{},
+			"publisher":  xmptype.ProperNameFieldType{},
+			"relation":   xmptype.TextFieldType{},
+
+			// TODO(dustin): Let's revisit once we can write a unit-test for it.
+			// "rights":      xmptype.LanguageAlternativeFieldType{},
+
+			"source":  xmptype.TextFieldType{},
+			"subject": xmptype.TextFieldType{},
+
+			// TODO(dustin): Let's revisit once we can write a unit-test for it.
+			// "title":       xmptype.LanguageAlternativeFieldType{},
+
+			"type": xmptype.TextFieldType{},
 		},
 	}
 

@@ -20,6 +20,10 @@ func TestParser_Parse(t *testing.T) {
 	xpi, err := xp.Parse()
 	log.PanicIf(err)
 
+	xpi.Dump()
+
+	return
+
 	actual, err := xpi.Get([]string{"[x]xmpmeta", "[claro]Logging", "[rdf]Seq", "[rdf]li"})
 	log.PanicIf(err)
 

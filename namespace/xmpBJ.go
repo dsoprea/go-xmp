@@ -10,10 +10,10 @@ func init() {
 	namespace := Namespace{
 		Uri:             XmpBJUri,
 		PreferredPrefix: "xmpBJ",
-		Fields:          map[string]FieldType{
-			// NOTE(dustin): Not implementing due to irrelevancy to how we process values.
-			// "JobRef":,
-		},
+		// Fields:          map[string]FieldType{
+		// 	// NOTE(dustin): Not implementing due to irrelevancy to how we process values.
+		// 	// "JobRef":,
+		// },
 	}
 
 	register(namespace)

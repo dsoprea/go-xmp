@@ -1,5 +1,9 @@
 package xmpnamespace
 
+import (
+	"github.com/dsoprea/go-xmp/type"
+)
+
 const (
 	// XmpRightsUri is the 'xmpRights' namespace URI made a constant to support
 	// testing.
@@ -10,12 +14,15 @@ func init() {
 	namespace := Namespace{
 		Uri:             XmpRightsUri,
 		PreferredPrefix: "xmpRights",
-		Fields: map[string]FieldType{
-			"Certificate":  TextFieldType,
-			"Marked":       BooleanFieldType,
-			"Owner":        ProperNameFieldType,
-			"UsageTerms":   LanguageAlternativeFieldType,
-			"WebStatement": TextFieldType,
+		Fields: map[string]interface{}{
+			"Certificate": xmptype.TextFieldType{},
+			"Marked":      xmptype.BooleanFieldType{},
+			"Owner":       xmptype.ProperNameFieldType{},
+
+			// TODO(dustin): Let's revisit once we can write a unit-test for it.
+			// "UsageTerms":   xmptype.LanguageAlternativeFieldType{},
+
+			"WebStatement": xmptype.TextFieldType{},
 		},
 	}
 

@@ -2,6 +2,7 @@ package xmpnamespace
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/dsoprea/go-logging"
 )
@@ -24,6 +25,10 @@ type Namespace struct {
 
 	// Fields is a mapping of field names to types.
 	Fields map[string]interface{}
+}
+
+func (namespace Namespace) String() string {
+	return fmt.Sprintf("Namespace<URI=[%s] PREFIX=[%s]>", namespace.Uri, namespace.PreferredPrefix)
 }
 
 var (

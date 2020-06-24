@@ -15,14 +15,14 @@ func init() {
 		Uri:             XmpMmUri,
 		PreferredPrefix: "xmpMM",
 		Fields: map[string]interface{}{
-			"DerivedFrom": xmptype.ResourceRefFieldType{},
-			"DocumentID":  xmptype.GuidFieldType{},
+			// "DerivedFrom": xmptype.ResourceRefFieldType{},
+			"DocumentID": xmptype.GuidFieldType{},
 
 			// TODO(dustin): ResourceEventFieldType type is not current implemented. Return to this.
 			// 			"History": ResourceEventFieldType,
 
-			"Ingredients":    xmptype.ResourceRefFieldType{},
-			"ManagedFrom":    xmptype.ResourceRefFieldType{},
+			// "Ingredients":    xmptype.ResourceRefFieldType{},
+			// "ManagedFrom":    xmptype.ResourceRefFieldType{},
 			"Manager":        xmptype.AgentNameFieldType{},
 			"ManageTo":       xmptype.UriFieldType{},
 			"ManageUI":       xmptype.UriFieldType{},

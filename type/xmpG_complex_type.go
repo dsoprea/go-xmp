@@ -49,3 +49,7 @@ func (cft ColorantFieldType) ChildFieldType(fieldName string) (ft interface{}, e
 func (cft ColorantFieldType) Namespace() Namespace {
 	return colorantNamespace
 }
+
+func init() {
+	registerComplex(ColorantFieldType{})
+}

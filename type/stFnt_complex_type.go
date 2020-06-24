@@ -6,7 +6,7 @@ const (
 	StFntUri = "http:ns.adobe.com/xap/1.0/sType/Font#"
 )
 
-// Specification has both "string" and "text" fields. "String" fields are not
+// Specification has both "String" and "Text" fields. "String" fields are not
 // defined, so using "Text" instead.
 
 var (
@@ -46,4 +46,8 @@ func (fft FontFieldType) ChildFieldType(fieldName string) (ft interface{}, err e
 // Namespace returns the namespace info the node/children of this type.
 func (fft FontFieldType) Namespace() Namespace {
 	return fontNamespace
+}
+
+func init() {
+	registerComplex(FontFieldType{})
 }

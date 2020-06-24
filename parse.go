@@ -9,6 +9,8 @@ import (
 
 	"github.com/dsoprea/go-logging"
 	"github.com/dsoprea/go-unicode-byteorder"
+
+	"github.com/dsoprea/go-xmp/type"
 )
 
 const (
@@ -90,7 +92,8 @@ type Parser struct {
 	rdfIsOpen            bool
 	rdfDescriptionIsOpen bool
 
-	stack []XmlName
+	stack    []XmlName
+	openTags []xml.StartElement
 
 	lastCharData *string
 
@@ -137,6 +140,7 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 	}
 
 	xp.stack = append(xp.stack, XmlName(t.Name))
+	xp.openTags = append(xp.openTags, t)
 
 	return nil
 }
@@ -170,22 +174,66 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 		return nil
 	}
 
-	// Process any stash char-data. Since this is cleared whenever we
-	// encounter a start-tag, this tells us that we were a leaf/scalar
-	// node.
-	if xp.lastCharData != nil {
-		xpn := XmpPropertyName(xp.stack)
+	lastOpenTagName := xp.stack[len(xp.stack)-1]
 
-		// TODO(dustin): !! We still need to parse the values to proper types.
-		valuePhrase := strings.Trim(string(*xp.lastCharData), "\r\n\t ")
+	cft, err := xmptype.GetComplex(lastOpenTagName.Space)
+	if err != nil && err != xmptype.ErrComplexTypeNotFound {
+		log.Panic(err)
+	}
 
-		xpi.add(xpn, valuePhrase)
+	xpn := XmpPropertyName(xp.stack)
+
+	// TODO(dustin): !! We need to properly manage array items, which can be both scalar values or complex.
+	//
+	// Just char-data:
+	//
+	// <photoshop:DocumentAncestors>
+	//   <rdf:Bag>
+	//     <rdf:li>09E6D0F0F1566931425946F327E43067
+	//     </rdf:li>
+	//
+	// <rdf:Seq>
+	//   <rdf:li>20141001 11:47:23 Channel 'WebRGB_Crop' processing file: 36253.jpg (36253.xml)
+	//   </rdf:li>
+	//
+	// Just attributes:
+	//
+	// <rdf:Seq>
+	//   <rdf:li stEvt:action="created" stEvt:instanceID="xmp.iid:146E0D5C4520681181ACE0A302384436" stEvt:softwareAgent="Adobe Photoshop CS5 Macintosh" stEvt:when="2013-09-23T10:09:46+02:00"/>
+	//
+	// Both attributes and char-data:
+	//
+	// <rdf:Alt xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+	//   <rdf:li xml:lang="x-default">Der Goalie bin ig
+	//
+	// Notice that the "Seq>li" hierarchy has 'li' tags that can have both attributes and char-data (so, sometimes 'li's parents may be used to determine to expect attributes versus char-data, but not other times).
+
+	if err == nil {
+		// We're closing a tag for a complex type.
+
+		attributes := xp.openTags[len(xp.openTags)-1].Attr
+
+		err := xpi.addComplexValue(xpn, cft, attributes)
+		log.PanicIf(err)
+
+		return nil
+	} else if xp.lastCharData != nil {
+
+		// Process any stash char-data. Since this is cleared whenever we
+		// encounter a start-tag, this tells us that we were a leaf/scalar
+		// node.
+
+		rawValue := strings.Trim(string(*xp.lastCharData), "\r\n\t ")
+
+		err := xpi.addScalarValue(xpn, rawValue)
+		log.PanicIf(err)
 
 		xp.lastCharData = nil
 	}
 
 	// Go already validates that the tags are balanced.
 	xp.stack = xp.stack[:len(xp.stack)-1]
+	xp.openTags = xp.openTags[:len(xp.openTags)-1]
 
 	return nil
 }
@@ -330,7 +378,7 @@ func (xp *Parser) Parse() (xpi *XmpPropertyIndex, err error) {
 		}
 	}()
 
-	xpi = newXmpPropertyIndex()
+	xpi = newXmpPropertyIndex(XmlName{})
 
 	for {
 		token, err := xp.xd.Token()

@@ -38,3 +38,7 @@ func (vft VersionFieldType) ChildFieldType(fieldName string) (ft interface{}, er
 func (vft VersionFieldType) Namespace() Namespace {
 	return versionNamespace
 }
+
+func init() {
+	registerComplex(VersionFieldType{})
+}

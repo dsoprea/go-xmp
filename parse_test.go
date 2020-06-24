@@ -20,6 +20,8 @@ func TestParser_Parse(t *testing.T) {
 	xpi, err := xp.Parse()
 	log.PanicIf(err)
 
+	fmt.Printf("Dumping\n")
+
 	xpi.Dump()
 
 	return
@@ -190,7 +192,7 @@ func TestParser_parseEndElementToken_pushToIndex(t *testing.T) {
 		Local: "bb",
 	}
 
-	xpi := newXmpPropertyIndex()
+	xpi := newXmpPropertyIndex(XmlName{})
 
 	err := xp.parseStartElementToken(xpi, xml.StartElement{Name: name})
 	log.PanicIf(err)

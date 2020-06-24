@@ -44,3 +44,7 @@ func (reft ResourceEventFieldType) ChildFieldType(fieldName string) (ft interfac
 func (reft ResourceEventFieldType) Namespace() Namespace {
 	return resourceEventNamespace
 }
+
+func init() {
+	registerComplex(ResourceEventFieldType{})
+}

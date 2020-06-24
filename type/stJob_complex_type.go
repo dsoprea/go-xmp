@@ -38,3 +38,7 @@ func (jft JobFieldType) ChildFieldType(fieldName string) (ft interface{}, err er
 func (jft JobFieldType) Namespace() Namespace {
 	return jobNamespace
 }
+
+func init() {
+	registerComplex(JobFieldType{})
+}

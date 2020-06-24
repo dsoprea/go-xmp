@@ -109,3 +109,7 @@ func (dmft DynamicMediaFieldType) ChildFieldType(fieldName string) (ft interface
 func (dmft DynamicMediaFieldType) Namespace() Namespace {
 	return dynamicMediaNamespace
 }
+
+func init() {
+	registerComplex(DynamicMediaFieldType{})
+}

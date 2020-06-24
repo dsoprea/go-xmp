@@ -39,3 +39,7 @@ func (dft DimensionsFieldType) ChildFieldType(fieldName string) (ft interface{},
 func (dft DimensionsFieldType) Namespace() Namespace {
 	return dimensionsNamespace
 }
+
+func init() {
+	registerComplex(DimensionsFieldType{})
+}

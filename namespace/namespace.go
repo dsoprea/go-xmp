@@ -3,8 +3,6 @@ package xmpnamespace
 import (
 	"errors"
 
-	"encoding/xml"
-
 	"github.com/dsoprea/go-logging"
 )
 
@@ -12,10 +10,6 @@ var (
 	// ErrNamespaceNotFound indicates that a namespace was requested that is
 	// not registered.
 	ErrNamespaceNotFound = errors.New("namespace not found")
-
-	// ErrFieldNotFound indicates that a field was not found for a specific
-	// namespace.
-	ErrFieldNotFound = errors.New("field not found")
 )
 
 // Namespace describes the information about a single namespace.
@@ -71,49 +65,4 @@ func MustGet(uri string) (namespace Namespace) {
 	}
 
 	return namespace
-}
-
-var (
-	cachedLookups = make(map[xml.Name]interface{})
-)
-
-// GetFieldType returns the field-type for a specific `xml.Name`.
-func GetFieldType(name xml.Name) (ft interface{}, err error) {
-	defer func() {
-		if errRaw := recover(); errRaw != nil {
-			err = log.Wrap(errRaw.(error))
-		}
-	}()
-
-	ft, found := cachedLookups[name]
-	if found == true {
-		return ft, nil
-	}
-
-	namespace, err := Get(name.Space)
-	if err != nil {
-		if err == ErrNamespaceNotFound {
-			return 0, err
-		}
-
-		log.Panic(err)
-	}
-
-	ft, found = namespace.Fields[name.Local]
-	if found == false {
-		return ft, ErrFieldNotFound
-	}
-
-	cachedLookups[name] = ft
-
-	return ft, nil
-}
-
-// MustGetFieldType returns the field-type for a specific `xml.Name`. It panics
-// if not known.
-func MustGetFieldType(name xml.Name) (ft interface{}) {
-	ft, err := GetFieldType(name)
-	log.PanicIf(err)
-
-	return ft
 }

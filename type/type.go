@@ -2,6 +2,9 @@ package xmptype
 
 import (
 	"errors"
+	"fmt"
+
+	"github.com/dsoprea/go-logging"
 )
 
 var (
@@ -12,6 +15,9 @@ var (
 	// ErrValueNotValid indicates that the value was not valid for the type
 	// prescribed in the specification.
 	ErrValueNotValid = errors.New("value not valid/allowed")
+
+	// ErrComplexTypeNotFound indicates that the complex-type is not known.
+	ErrComplexTypeNotFound = errors.New("complex-type not known")
 )
 
 // ScalarFieldType represents a factory for ScalarValueParser types.
@@ -38,6 +44,10 @@ type Namespace struct {
 	PreferredPrefix string
 }
 
+func (namespace Namespace) String() string {
+	return fmt.Sprintf("Namespace<URI=[%s] PREFIX=[%s]>", namespace.Uri, namespace.PreferredPrefix)
+}
+
 // ComplexFieldType represents a complex value (comprised of child nodes).
 type ComplexFieldType interface {
 	// ChildFieldType returns the field-type for the immediate child with the
@@ -46,4 +56,47 @@ type ComplexFieldType interface {
 
 	// Namespace returns the namespace info the node/children of this type.
 	Namespace() Namespace
+}
+
+var (
+	complexTypes = make(map[string]ComplexFieldType)
+)
+
+func registerComplex(cft ComplexFieldType) {
+	namespace := cft.Namespace()
+
+	if _, found := complexTypes[namespace.Uri]; found == true {
+		log.Panicf("namespace already registered: [%s]", namespace.Uri)
+	}
+
+	complexTypes[namespace.Uri] = cft
+}
+
+// GetComplex returns the ComplexFieldType struct associated with the given
+// namespace.
+func GetComplex(namespaceUri string) (cft ComplexFieldType, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	cft, found := complexTypes[namespaceUri]
+
+	if found == false {
+		return nil, ErrComplexTypeNotFound
+	}
+
+	return cft, nil
+}
+
+// MustGetComplex returns the ComplexFieldType struct associated with the given
+// namespace. It panics if not known.
+func MustGetComplex(namespaceUri string) (cft ComplexFieldType) {
+	cft, err := GetComplex(namespaceUri)
+	if err != nil {
+		panic(err)
+	}
+
+	return cft
 }

@@ -63,7 +63,7 @@ func TestXmpPropertyName_String(t *testing.T) {
 }
 
 func TestNewXmpPropertyIndex(t *testing.T) {
-	xpi := newXmpPropertyIndex()
+	xpi := newXmpPropertyIndex(XmlName{})
 	if xpi.subindices == nil {
 		t.Fatalf("subindices not initialized.")
 	} else if xpi.leaves == nil {
@@ -72,39 +72,39 @@ func TestNewXmpPropertyIndex(t *testing.T) {
 }
 
 func getTestIndex() *XmpPropertyIndex {
-	xpi := newXmpPropertyIndex()
+	xpi := newXmpPropertyIndex(XmlName{})
 
 	microsoftphotoNamespaceUri := "http://ns.microsoft.com/photo/1.0/"
 
 	name := XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "title"}, {xmpnamespace.RdfUri, "Alt"}, {xmpnamespace.RdfUri, "li"}}
 	value := "Der Goalie bin ig"
 
-	xpi.add(name, value)
+	xpi.addScalarValue(name, value)
 
 	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "description"}, {xmpnamespace.RdfUri, "Alt"}, {xmpnamespace.RdfUri, "li"}}
 	value = "Der Goalie bin ig"
 
-	xpi.add(name, value)
+	xpi.addScalarValue(name, value)
 
 	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "creator"}, {xmpnamespace.RdfUri, "Seq"}, {xmpnamespace.RdfUri, "li"}}
 	value = "CREDIT"
 
-	xpi.add(name, value)
+	xpi.addScalarValue(name, value)
 
 	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "subject"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
 	value = "tag"
 
-	xpi.add(name, value)
+	xpi.addScalarValue(name, value)
 
 	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordXMP"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
 	value = "tag"
 
-	xpi.add(name, value)
+	xpi.addScalarValue(name, value)
 
 	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordIPTC"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
 	value = "tag"
 
-	xpi.add(name, value)
+	xpi.addScalarValue(name, value)
 
 	return xpi
 }

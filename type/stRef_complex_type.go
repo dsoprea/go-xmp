@@ -52,3 +52,7 @@ func (rrft ResourceRefFieldType) ChildFieldType(fieldName string) (ft interface{
 func (rrft ResourceRefFieldType) Namespace() Namespace {
 	return resourceRefNamespace
 }
+
+func init() {
+	registerComplex(ResourceRefFieldType{})
+}

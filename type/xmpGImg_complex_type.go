@@ -40,3 +40,7 @@ func (tft ThumbnailFieldType) ChildFieldType(fieldName string) (ft interface{}, 
 func (tft ThumbnailFieldType) Namespace() Namespace {
 	return thumbnailNamespace
 }
+
+func init() {
+	registerComplex(ThumbnailFieldType{})
+}

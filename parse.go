@@ -99,11 +99,14 @@ type Parser struct {
 	rdfIsOpen            bool
 	rdfDescriptionIsOpen bool
 
-	stack []XmlName
+	// nameStack is a stack comprised of xml.Name structs.
+	nameStack []XmlName
+
+	// stringStack is a stack comprised of simple names, used for matching.
+	stringStack []string
 
 	lastCharData *string
-
-	lastToken xml.Token
+	lastToken    xml.Token
 
 	unknownNamespaces map[string]struct{}
 }
@@ -111,12 +114,16 @@ type Parser struct {
 // NewParser returns a new Parser struct.
 func NewParser(r io.Reader) *Parser {
 	xd := xml.NewDecoder(r)
-	stack := make([]XmlName, 0)
+
+	nameStack := make([]XmlName, 0)
+	stringStack := make([]string, 0)
+
 	unknownNamespaces := make(map[string]struct{})
 
 	return &Parser{
 		xd:                xd,
-		stack:             stack,
+		nameStack:         nameStack,
+		stringStack:       stringStack,
 		unknownNamespaces: unknownNamespaces,
 	}
 }
@@ -148,7 +155,9 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 		return nil
 	}
 
-	xp.stack = append(xp.stack, XmlName(t.Name))
+	nodeName := XmlName(t.Name)
+	xp.nameStack = append(xp.nameStack, nodeName)
+	xp.stringStack = append(xp.stringStack, nodeName.String())
 
 	for _, attribute := range t.Attr {
 		namespaceUri := attribute.Name.Space
@@ -230,17 +239,70 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 	}
 
 	// Go already validates that the tags are balanced.
-	xp.stack = xp.stack[:len(xp.stack)-1]
+	xp.nameStack = xp.nameStack[:len(xp.nameStack)-1]
+	xp.stringStack = xp.stringStack[:len(xp.stringStack)-1]
 
 	return nil
 }
 
+// matchNodeName returns whether the given string-slice matches against the end
+// of the current string stack (the stringicized names of all of the nodes that
+// comprise where we're currently at in the tree).
+func (xp *Parser) matchNodeName(queryName []string) bool {
+	queryLen := len(queryName)
+	if len(xp.stringStack) < queryLen {
+		return false
+	}
+
+	candidateSuffix := xp.stringStack[len(xp.stringStack)-queryLen:]
+
+	for i, part := range queryName {
+		if candidateSuffix[i] != part {
+			return false
+		}
+	}
+
+	return true
+}
+
+// parseCharData parses the char-data that exists in leaf-nodes (not in nodes
+// that have child-nodes).
 func (xp *Parser) parseCharData(nodeName xml.Name, rawValue string) (err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
 		}
 	}()
+
+	// Handle an array item.
+
+	if nodeName.Local == "li" {
+		// TODO(dustin): !! Note that, if/when we're building a list of array items, we should also capture the attributes of the 'li' node as well. This would be necessary with language-alternative nodes, for instance (the data we need in order for that to be of value partially exists as attributes).
+		// TODO(dustin): !! Keep in mind that may the encapsulating nodes likely specify which collection type to expect, so we can proactively process them from the top rather than reacting to them from the bottom (like we're doing, here).
+
+		xpn := XmpPropertyName(xp.nameStack[:len(xp.nameStack)-2])
+
+		if xp.matchNodeName([]string{"[rdf]Alt", "[rdf]li"}) == true {
+			fmt.Printf("Found alt under [%s]\n", xpn.String())
+
+			// TODO(dustin): !! Finish
+
+		} else if xp.matchNodeName([]string{"[rdf]Seq", "[rdf]li"}) == true {
+			fmt.Printf("Found seq under [%s]\n", xpn.String())
+
+			// TODO(dustin): !! Finish
+
+		} else if xp.matchNodeName([]string{"[rdf]Bag", "[rdf]li"}) == true {
+			fmt.Printf("Found bag under [%s]\n", xpn.String())
+
+			// TODO(dustin): !! Finish
+
+		}
+
+		return nil
+	}
+
+	// Parse a normal node.
 
 	namespaceUri := nodeName.Space
 	localName := nodeName.Local

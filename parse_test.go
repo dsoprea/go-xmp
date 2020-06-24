@@ -116,8 +116,10 @@ func TestNewParser(t *testing.T) {
 
 	if p.xd == nil {
 		t.Fatalf("XML decoder not assigned.")
-	} else if len(p.stack) != 0 {
-		t.Fatalf("Stack not initialized or not empty.")
+	} else if len(p.nameStack) != 0 {
+		t.Fatalf("Name stack not initialized or not empty.")
+	} else if len(p.stringStack) != 0 {
+		t.Fatalf("String stack not initialized or not empty.")
 	}
 }
 
@@ -134,7 +136,7 @@ func TestParser_parseStartElementToken(t *testing.T) {
 
 	expected := []XmlName{XmlName(name)}
 
-	if reflect.DeepEqual(xp.stack, expected) != true {
+	if reflect.DeepEqual(xp.nameStack, expected) != true {
 		t.Fatalf("Stack not correct.")
 	}
 }
@@ -153,14 +155,14 @@ func TestParser_parseEndElementToken(t *testing.T) {
 	err := xp.parseStartElementToken(nil, xml.StartElement{Name: name})
 	log.PanicIf(err)
 
-	if len(xp.stack) != 1 {
+	if len(xp.nameStack) != 1 {
 		t.Fatalf("Stack should have one item.")
 	}
 
 	err = xp.parseEndElementToken(nil, xml.EndElement{Name: name})
 	log.PanicIf(err)
 
-	if len(xp.stack) != 0 {
+	if len(xp.nameStack) != 0 {
 		t.Fatalf("Stack should be empty.")
 	}
 }

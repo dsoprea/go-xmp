@@ -97,3 +97,58 @@ type ScalarValueParser interface {
 
 // 	return cft
 // }
+
+// TODO(dustin): !! Finish implementing the array-handling logic below.
+
+type Array interface {
+	Count() int
+}
+
+type OrderedArray struct {
+}
+
+func (oa OrderedArray) Count() int {
+
+	// TODO(dustin): !! Finish
+
+	return 0
+}
+
+type OrderedTextArray struct {
+	OrderedArray
+}
+
+type OrderedUriArray struct {
+	OrderedArray
+}
+
+type OrderedResourceEventArray struct {
+	OrderedArray
+}
+
+// TODO(dustin): Ordered array yet-to-implement: CuePointParam, Marker, ResourceEvent, Version, Colorant, Marker, Layer, "point" (?)
+// TODO(dustin): Unordered array yet-to-implement: XPath, ResourceRef, "struct" (?), Job, Font, Media, Track, Ancestor
+
+type UnorderedArray struct {
+}
+
+func (ua UnorderedArray) Count() int {
+
+	// TODO(dustin): !! Finish
+
+	return 0
+}
+
+type UnorderedTextArray struct {
+	UnorderedArray
+}
+
+type AlternativeArray struct {
+}
+
+func (aa AlternativeArray) Count() int {
+
+	// TODO(dustin): !! Finish
+
+	return 0
+}

@@ -86,6 +86,11 @@ func (raa rawAttributeAssignment) parse() (string, string) {
 	return name, value
 }
 
+type arrayInstance struct {
+	name      xml.Name
+	collected []interface{}
+}
+
 // Parser parses an XMP document.
 type Parser struct {
 	xd *xml.Decoder
@@ -102,13 +107,12 @@ type Parser struct {
 	// nameStack is a stack comprised of xml.Name structs.
 	nameStack []XmlName
 
-	// stringStack is a stack comprised of simple names, used for matching.
-	stringStack []string
-
 	lastCharData *string
 	lastToken    xml.Token
 
 	unknownNamespaces map[string]struct{}
+
+	unfinishedArrayLayers [][]interface{}
 }
 
 // NewParser returns a new Parser struct.
@@ -116,16 +120,61 @@ func NewParser(r io.Reader) *Parser {
 	xd := xml.NewDecoder(r)
 
 	nameStack := make([]XmlName, 0)
-	stringStack := make([]string, 0)
 
 	unknownNamespaces := make(map[string]struct{})
+
+	unfinishedArrayLayers := make([][]interface{}, 0)
 
 	return &Parser{
 		xd:                xd,
 		nameStack:         nameStack,
-		stringStack:       stringStack,
 		unknownNamespaces: unknownNamespaces,
+
+		unfinishedArrayLayers: unfinishedArrayLayers,
 	}
+}
+
+func (xp *Parser) isArrayNode(name xml.Name) (flag bool, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	nodeNamespaceUri := name.Space
+	nodeLocalName := name.Local
+
+	nodeNamespace, err := xmpnamespace.Get(nodeNamespaceUri)
+	if err != nil {
+		if err == xmpnamespace.ErrNamespaceNotFound {
+			if _, found := xp.unknownNamespaces[nodeNamespaceUri]; found == false {
+				parseLogger.Warningf(
+					nil,
+					"Namespace [%s] for node [%s] is not known. Skipping array check.",
+					nodeNamespaceUri, nodeLocalName)
+			}
+
+			return false, nil
+		} else {
+			log.Panic(err)
+		}
+	}
+
+	flag, err = isArrayType(nodeNamespace, nodeLocalName)
+	if err != nil {
+		if err == ErrChildFieldNotFound {
+			parseLogger.Warningf(
+				nil,
+				"Namespace [%s] for node [%s] is not known to have child [%s]. Skipping array check.",
+				nodeNamespaceUri, nodeLocalName, nodeLocalName)
+
+			return false, nil
+		} else {
+			log.Panic(err)
+		}
+	}
+
+	return true, nil
 }
 
 func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartElement) (err error) {
@@ -157,21 +206,22 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 
 	nodeName := XmlName(t.Name)
 	xp.nameStack = append(xp.nameStack, nodeName)
-	xp.stringStack = append(xp.stringStack, nodeName.String())
+
+	// Try to lookup and parse attributes.
 
 	for _, attribute := range t.Attr {
-		namespaceUri := attribute.Name.Space
-		localName := attribute.Name.Local
-		rawValue := attribute.Value
+		attributeNamespaceUri := attribute.Name.Space
+		attributeLocalName := attribute.Name.Local
+		attributeRawValue := attribute.Value
 
-		namespace, err := xmpnamespace.Get(namespaceUri)
+		attributeNamespace, err := xmpnamespace.Get(attributeNamespaceUri)
 		if err != nil {
 			if err == xmpnamespace.ErrNamespaceNotFound {
-				if _, found := xp.unknownNamespaces[namespaceUri]; found == false {
+				if _, found := xp.unknownNamespaces[attributeNamespaceUri]; found == false {
 					parseLogger.Warningf(
 						nil,
 						"Namespace [%s] for attribute [%s] is not known. Skipping.",
-						namespaceUri, localName)
+						attributeNamespaceUri, attributeLocalName)
 				}
 
 				continue
@@ -180,13 +230,13 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 			log.Panic(err)
 		}
 
-		parsedValue, err := parseValue(namespace, localName, rawValue)
+		parsedValue, err := parseValue(attributeNamespace, attributeLocalName, attributeRawValue)
 		if err != nil {
 			if err == ErrChildFieldNotFound || err == xmptype.ErrValueNotValid {
 				parseLogger.Warningf(
 					nil,
 					"Could not parse attribute [%s] [%s] value: [%s]",
-					namespaceUri, localName, rawValue)
+					attributeNamespaceUri, attributeLocalName, attributeRawValue)
 
 				continue
 			}
@@ -197,6 +247,33 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 		// TODO(dustin): !! Still need to store this value somewhere.
 		// fmt.Printf("Parsed ATTRIBUTE [%s] [%s] [%s] -> [%s] [%v]\n", namespaceUri, localName, rawValue, reflect.TypeOf(parsedValue), parsedValue)
 		parsedValue = parsedValue
+	}
+
+	// Determine if the current node is known to have an array underneath it.
+
+	isArray, err := xp.isArrayNode(t.Name)
+	log.PanicIf(err)
+
+	if isArray == true {
+		// We've encountered a new array.
+
+		xpn := XmpPropertyName(xp.nameStack)
+		fmt.Printf("Starting array: %s\n", xpn)
+
+		// TODO(dustin): !! Might want to capture the parsed attributes here.
+
+		xp.unfinishedArrayLayers = append(xp.unfinishedArrayLayers, make([]interface{}, 0))
+	} else if len(xp.unfinishedArrayLayers) > 0 {
+		// We've not encountered a new array but are currently inside a higher
+		// one. Append the current node to it.
+
+		xpn := XmpPropertyName(xp.nameStack)
+		fmt.Printf("Collecting within array: %s\n", xpn)
+
+		// TODO(dustin): !! Might want to capture the parsed attributes here.
+
+		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
+		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], t)
 	}
 
 	return nil
@@ -238,31 +315,50 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 		xp.lastCharData = nil
 	}
 
+	// Process the array-end if this node was known to be an array.
+
+	isArray, err := xp.isArrayNode(t.Name)
+	log.PanicIf(err)
+
+	if isArray == true {
+		// We've encountered a new array.
+
+		currentUnfinishedLayerNumber := len(xp.unfinishedArrayLayers) - 1
+
+		ai := arrayInstance{
+			name:      t.Name,
+			collected: xp.unfinishedArrayLayers[currentUnfinishedLayerNumber],
+		}
+
+		xp.unfinishedArrayLayers = xp.unfinishedArrayLayers[:currentUnfinishedLayerNumber]
+
+		if len(xp.unfinishedArrayLayers) > 0 {
+			newUnfinishedLayerNumber := len(xp.unfinishedArrayLayers) - 1
+			xp.unfinishedArrayLayers[newUnfinishedLayerNumber] = append(xp.unfinishedArrayLayers[newUnfinishedLayerNumber], ai)
+		}
+
+		xpn := XmpPropertyName(xp.nameStack)
+		fmt.Printf("Finished array: %s\n", xpn)
+
+		// TODO(dustin): !! Flatten and finish the array-instance into the index. Note that arrays within arrays will appear as separate instances: The lower arrays are directly indexable as well as able to be found within the items of the higher arrays.
+
+	} else if len(xp.unfinishedArrayLayers) > 0 {
+		// We've not closed an array but are currently inside a higher one.
+		// Append the current node to it.
+
+		xpn := XmpPropertyName(xp.nameStack)
+		fmt.Printf("Collecting within array: %s\n", xpn)
+
+		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
+		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], t)
+
+		// TODO(dustin): !! We probably want to capture the parsed char-data, here.
+	}
+
 	// Go already validates that the tags are balanced.
 	xp.nameStack = xp.nameStack[:len(xp.nameStack)-1]
-	xp.stringStack = xp.stringStack[:len(xp.stringStack)-1]
 
 	return nil
-}
-
-// matchNodeName returns whether the given string-slice matches against the end
-// of the current string stack (the stringicized names of all of the nodes that
-// comprise where we're currently at in the tree).
-func (xp *Parser) matchNodeName(queryName []string) bool {
-	queryLen := len(queryName)
-	if len(xp.stringStack) < queryLen {
-		return false
-	}
-
-	candidateSuffix := xp.stringStack[len(xp.stringStack)-queryLen:]
-
-	for i, part := range queryName {
-		if candidateSuffix[i] != part {
-			return false
-		}
-	}
-
-	return true
 }
 
 // parseCharData parses the char-data that exists in leaf-nodes (not in nodes
@@ -274,31 +370,8 @@ func (xp *Parser) parseCharData(nodeName xml.Name, rawValue string) (err error) 
 		}
 	}()
 
-	// Handle an array item.
-
+	// This is an array item. This is handled in the tag-close handler.
 	if nodeName.Local == "li" {
-		// TODO(dustin): !! Note that, if/when we're building a list of array items, we should also capture the attributes of the 'li' node as well. This would be necessary with language-alternative nodes, for instance (the data we need in order for that to be of value partially exists as attributes).
-		// TODO(dustin): !! Keep in mind that may the encapsulating nodes likely specify which collection type to expect, so we can proactively process them from the top rather than reacting to them from the bottom (like we're doing, here).
-
-		xpn := XmpPropertyName(xp.nameStack[:len(xp.nameStack)-2])
-
-		if xp.matchNodeName([]string{"[rdf]Alt", "[rdf]li"}) == true {
-			fmt.Printf("Found alt under [%s]\n", xpn.String())
-
-			// TODO(dustin): !! Finish
-
-		} else if xp.matchNodeName([]string{"[rdf]Seq", "[rdf]li"}) == true {
-			fmt.Printf("Found seq under [%s]\n", xpn.String())
-
-			// TODO(dustin): !! Finish
-
-		} else if xp.matchNodeName([]string{"[rdf]Bag", "[rdf]li"}) == true {
-			fmt.Printf("Found bag under [%s]\n", xpn.String())
-
-			// TODO(dustin): !! Finish
-
-		}
-
 		return nil
 	}
 

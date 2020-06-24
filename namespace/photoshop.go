@@ -37,8 +37,9 @@ func init() {
 			"Source":       xmptype.TextFieldType{},
 			"State":        xmptype.TextFieldType{},
 
+			"SupplementalCategories": xmptype.UnorderedTextArray{},
+
 			// TODO(dustin): We need to finish our implementation of Array
-			// "SupplementalCategories":
 			// "TextLayers":
 
 			"TransmissionReference": xmptype.TextFieldType{},

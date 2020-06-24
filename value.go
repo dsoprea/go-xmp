@@ -30,7 +30,7 @@ func parseValue(namespace xmpnamespace.Namespace, fieldName string, rawValue str
 
 	ft, found := namespace.Fields[fieldName]
 	if found == false {
-		fmt.Printf("Could not find field [%s] in namespace [%s]\n", fieldName, namespace.PreferredPrefix)
+		fmt.Printf("Could not find field [%s] in namespace [%s] (parseValue)\n", fieldName, namespace.PreferredPrefix)
 		return nil, ErrChildFieldNotFound
 	}
 
@@ -54,4 +54,21 @@ func parseValue(namespace xmpnamespace.Namespace, fieldName string, rawValue str
 	}
 
 	return parsedValue, nil
+}
+
+func isArrayType(namespace xmpnamespace.Namespace, fieldName string) (flag bool, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	ft, found := namespace.Fields[fieldName]
+	if found == false {
+		return false, ErrChildFieldNotFound
+	}
+
+	_, ok := ft.(xmptype.Array)
+
+	return ok, nil
 }

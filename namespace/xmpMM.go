@@ -19,7 +19,7 @@ func init() {
 			"DocumentID": xmptype.GuidFieldType{},
 
 			// TODO(dustin): ResourceEventFieldType type is not current implemented. Return to this.
-			// 			"History": ResourceEventFieldType,
+			"History": xmptype.OrderedResourceEventArray{},
 
 			// "Ingredients":    xmptype.ResourceRefFieldType{},
 			// "ManagedFrom":    xmptype.ResourceRefFieldType{},

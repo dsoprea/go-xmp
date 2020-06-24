@@ -118,8 +118,6 @@ func TestNewParser(t *testing.T) {
 		t.Fatalf("XML decoder not assigned.")
 	} else if len(p.nameStack) != 0 {
 		t.Fatalf("Name stack not initialized or not empty.")
-	} else if len(p.stringStack) != 0 {
-		t.Fatalf("String stack not initialized or not empty.")
 	}
 }
 

@@ -20,7 +20,7 @@ func init() {
 			// "Fonts":,
 			// "MaxPageSize":
 			"NPages":               xmptype.IntegerFieldType{},
-			"PlateNames":           xmptype.TextFieldType{},
+			"PlateNames":           xmptype.OrderedTextArray{},
 			"absPeakAudioFilePath": xmptype.UriFieldType{},
 			"album":                xmptype.TextFieldType{},
 			"altTapeName":          xmptype.TextFieldType{},

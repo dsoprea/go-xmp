@@ -14,8 +14,8 @@ type TextFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (tft *TextFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &TextFieldValue{
+func (tft TextFieldType) GetValueParser(raw string) ScalarValueParser {
+	return TextFieldValue{
 		raw: raw,
 	}
 }

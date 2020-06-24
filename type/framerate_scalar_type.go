@@ -11,8 +11,8 @@ type FrameRateFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (fcft *FrameRateFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &FrameRateFieldValue{
+func (fcft FrameRateFieldType) GetValueParser(raw string) ScalarValueParser {
+	return FrameRateFieldValue{
 		TextFieldValue: TextFieldValue{
 			raw: raw,
 		},

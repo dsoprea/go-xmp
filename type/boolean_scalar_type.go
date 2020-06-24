@@ -20,8 +20,8 @@ type BooleanFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (bft *BooleanFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &BooleanFieldValue{
+func (bft BooleanFieldType) GetValueParser(raw string) ScalarValueParser {
+	return BooleanFieldValue{
 		raw: raw,
 	}
 }

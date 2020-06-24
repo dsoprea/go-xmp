@@ -40,15 +40,15 @@ type OpenChoiceFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (ocft *OpenChoiceFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &OpenChoiceFieldValue{
+func (ocft OpenChoiceFieldType) GetValueParser(raw string) ScalarValueParser {
+	return OpenChoiceFieldValue{
 		raw: raw,
 	}
 }
 
 // Choices returns the set of possible choices. This should be overridden by a
 // purpose-specific type.
-func (ocft *OpenChoiceFieldType) Choices() []string {
+func (ocft OpenChoiceFieldType) Choices() []string {
 
 	panic(ErrChoicesNotSet)
 
@@ -63,15 +63,15 @@ type ClosedChoiceFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (ccft *ClosedChoiceFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &ClosedChoiceFieldValue{
+func (ccft ClosedChoiceFieldType) GetValueParser(raw string) ScalarValueParser {
+	return ClosedChoiceFieldValue{
 		raw: raw,
 	}
 }
 
 // Choices returns the set of required choices. This should be overridden by a
 // purpose-specific type.
-func (ccft *ClosedChoiceFieldType) Choices() []string {
+func (ccft ClosedChoiceFieldType) Choices() []string {
 
 	panic(ErrChoicesNotSet)
 

@@ -12,8 +12,8 @@ type RenditionClassFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (rcft *RenditionClassFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &RenditionClassFieldValue{
+func (rcft RenditionClassFieldType) GetValueParser(raw string) ScalarValueParser {
+	return RenditionClassFieldValue{
 		OpenChoiceFieldValue: OpenChoiceFieldValue{
 			raw: raw,
 			choices: []string{

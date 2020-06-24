@@ -36,8 +36,8 @@ type DateFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (dft *DateFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &DateFieldValue{
+func (dft DateFieldType) GetValueParser(raw string) ScalarValueParser {
+	return DateFieldValue{
 		raw: raw,
 	}
 }

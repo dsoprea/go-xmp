@@ -44,8 +44,8 @@ type RationalFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (rft *RationalFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &RationalFieldValue{
+func (rft RationalFieldType) GetValueParser(raw string) ScalarValueParser {
+	return RationalFieldValue{
 		raw: raw,
 	}
 }

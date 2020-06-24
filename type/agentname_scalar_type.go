@@ -10,8 +10,8 @@ type AgentNameFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (anft *AgentNameFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &AgentNameFieldValue{
+func (anft AgentNameFieldType) GetValueParser(raw string) ScalarValueParser {
+	return AgentNameFieldValue{
 		TextFieldValue: TextFieldValue{
 			raw: raw,
 		},

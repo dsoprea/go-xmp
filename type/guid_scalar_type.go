@@ -13,8 +13,8 @@ type GuidFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (gft *GuidFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &GuidFieldValue{
+func (gft GuidFieldType) GetValueParser(raw string) ScalarValueParser {
+	return GuidFieldValue{
 		TextFieldValue: TextFieldValue{
 			raw: raw,
 		},

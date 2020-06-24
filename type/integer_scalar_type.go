@@ -23,8 +23,8 @@ type IntegerFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (ift *IntegerFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &IntegerFieldValue{
+func (ift IntegerFieldType) GetValueParser(raw string) ScalarValueParser {
+	return IntegerFieldValue{
 		raw: raw,
 	}
 }

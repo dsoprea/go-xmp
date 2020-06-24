@@ -1,7 +1,9 @@
 package xmp
 
 import (
+	"fmt"
 	"io"
+	"reflect"
 	"strings"
 
 	"encoding/binary"
@@ -9,6 +11,13 @@ import (
 
 	"github.com/dsoprea/go-logging"
 	"github.com/dsoprea/go-unicode-byteorder"
+
+	"github.com/dsoprea/go-xmp/namespace"
+	"github.com/dsoprea/go-xmp/type"
+)
+
+var (
+	parseLogger = log.NewLogger("xmp.parse")
 )
 
 const (
@@ -95,17 +104,20 @@ type Parser struct {
 	lastCharData *string
 
 	lastToken xml.Token
+
+	unknownNamespaces map[string]struct{}
 }
 
 // NewParser returns a new Parser struct.
 func NewParser(r io.Reader) *Parser {
 	xd := xml.NewDecoder(r)
-
 	stack := make([]XmlName, 0)
+	unknownNamespaces := make(map[string]struct{})
 
 	return &Parser{
-		xd:    xd,
-		stack: stack,
+		xd:                xd,
+		stack:             stack,
+		unknownNamespaces: unknownNamespaces,
 	}
 }
 
@@ -139,10 +151,43 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 	xp.stack = append(xp.stack, XmlName(t.Name))
 
 	for _, attribute := range t.Attr {
-		attribute = attribute
+		namespaceUri := attribute.Name.Space
+		localName := attribute.Name.Local
+		rawValue := attribute.Value
 
-		// TODO(dustin): !! Only do this if we can find the namespace and the node's local-name is found as a field within it. This will give us the type that we need to parse the value. Otherwise, log and skip.
+		namespace, err := xmpnamespace.Get(namespaceUri)
+		if err != nil {
+			if err == xmpnamespace.ErrNamespaceNotFound {
+				if _, found := xp.unknownNamespaces[namespaceUri]; found == false {
+					parseLogger.Warningf(
+						nil,
+						"Namespace [%s] for attribute [%s] is not known. Skipping.",
+						namespaceUri, localName)
+				}
 
+				continue
+			}
+
+			log.Panic(err)
+		}
+
+		parsedValue, err := parseValue(namespace, localName, rawValue)
+		if err != nil {
+			if err == ErrChildFieldNotFound || err == xmptype.ErrValueNotValid {
+				parseLogger.Warningf(
+					nil,
+					"Could not parse attribute [%s] [%s] value: [%s]",
+					namespaceUri, localName, rawValue)
+
+				continue
+			}
+
+			log.Panic(err)
+		}
+
+		// TODO(dustin): !! Still need to store this value somewhere.
+		// fmt.Printf("Parsed ATTRIBUTE [%s] [%s] [%s] -> [%s] [%v]\n", namespaceUri, localName, rawValue, reflect.TypeOf(parsedValue), parsedValue)
+		parsedValue = parsedValue
 	}
 
 	return nil
@@ -178,24 +223,69 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 	}
 
 	if xp.lastCharData != nil {
-
-		// TODO(dustin): !! Only do this if we can find the namespace and the node's local-name is found as a field within it. This will give us the type that we need to parse the value. Otheriwse, log and skip.
-
-		// Process any stash char-data. Since this is cleared whenever we
-		// encounter a start-tag, this tells us that we were a leaf/scalar
-		// node.
-
-		// xpn := XmpPropertyName(xp.stack)
-		// rawValue := strings.Trim(string(*xp.lastCharData), "\r\n\t ")
-
-		// err := xpi.addScalarValue(xpn, rawValue)
-		// log.PanicIf(err)
+		err := xp.parseCharData(t.Name, *xp.lastCharData)
+		log.PanicIf(err)
 
 		xp.lastCharData = nil
 	}
 
 	// Go already validates that the tags are balanced.
 	xp.stack = xp.stack[:len(xp.stack)-1]
+
+	return nil
+}
+
+func (xp *Parser) parseCharData(nodeName xml.Name, rawValue string) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	namespaceUri := nodeName.Space
+	localName := nodeName.Local
+
+	namespace, err := xmpnamespace.Get(namespaceUri)
+	if err != nil {
+		if err == xmpnamespace.ErrNamespaceNotFound {
+			if _, found := xp.unknownNamespaces[namespaceUri]; found == false {
+				parseLogger.Warningf(
+					nil,
+					"Namespace [%s] for node [%s] with char-data is not known. Skipping.",
+					namespaceUri, localName)
+
+				fmt.Printf(
+					"Namespace [%s] for node [%s] with char-data is not known. Skipping.\n",
+					namespaceUri, localName)
+			}
+
+			return nil
+		}
+
+		log.Panic(err)
+	}
+
+	parsedValue, err := parseValue(namespace, localName, rawValue)
+	if err != nil {
+		if err == ErrChildFieldNotFound || err == xmptype.ErrValueNotValid {
+			parseLogger.Warningf(
+				nil,
+				"Could not parse char-data under node [%s] [%s] value: [%s]",
+				namespaceUri, localName, rawValue)
+
+			fmt.Printf(
+				"Could not parse char-data under node [%s] [%s] value: [%s]\n",
+				namespaceUri, localName, rawValue)
+
+			return nil
+		}
+
+		log.Panic(err)
+	}
+
+	// TODO(dustin): !! Still need to store this value somewhere.
+	fmt.Printf("Parsed CHAR-DATA [%s] [%s] [%s] -> [%s] [%v]\n", namespaceUri, localName, rawValue, reflect.TypeOf(parsedValue), parsedValue)
+	parsedValue = parsedValue
 
 	return nil
 }

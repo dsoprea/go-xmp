@@ -23,8 +23,8 @@ type RealFieldType struct {
 
 // GetValueParser returns an instance of ScalarValueParser initialized to
 // parse a specific string.
-func (rft *RealFieldType) GetValueParser(raw string) ScalarValueParser {
-	return &RealFieldValue{
+func (rft RealFieldType) GetValueParser(raw string) ScalarValueParser {
+	return RealFieldValue{
 		raw: raw,
 	}
 }

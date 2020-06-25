@@ -67,6 +67,23 @@ func (xpi *XmpPropertyIndex) addArrayValue(name xmpregistry.XmpPropertyName, arr
 		}
 	}()
 
+	// TODO(dustin): !! Just for exploration/debugging.
+	stringLister, ok := array.(xmptype.ArrayStringValueLister)
+	if ok == true {
+		items, err := stringLister.Items()
+		log.PanicIf(err)
+
+		items = items
+
+		fmt.Printf("Indexing array value: [%s]\n", name)
+
+		for i, value := range items {
+			fmt.Printf("(%d)> [%s]\n", i, value)
+		}
+
+		fmt.Printf("\n")
+	}
+
 	// TODO(dustin): !! Finish
 
 	return nil

@@ -20,26 +20,17 @@ func init() {
 			"coverage":    xmptype.TextFieldType{},
 			"creator":     xmptype.ProperNameFieldType{},
 			"date":        xmptype.DateFieldType{},
-
-			// TODO(dustin): Let's revisit once we can write a unit-test for it.
-			// "description": xmptype.LanguageAlternativeFieldType{},
-
-			"format":     xmptype.MimeTypeFieldType{},
-			"identifier": xmptype.TextFieldType{},
-			"language":   xmptype.LocaleFieldType{},
-			"publisher":  xmptype.ProperNameFieldType{},
-			"relation":   xmptype.TextFieldType{},
-
-			// TODO(dustin): Let's revisit once we can write a unit-test for it.
-			// "rights":      xmptype.LanguageAlternativeFieldType{},
-
-			"source":  xmptype.TextFieldType{},
-			"subject": xmptype.TextFieldType{},
-
-			// TODO(dustin): Let's revisit once we can write a unit-test for it.
-			// "title":       xmptype.LanguageAlternativeFieldType{},
-
-			"type": xmptype.TextFieldType{},
+			"description": xmptype.LanguageAlternativeArrayType{},
+			"format":      xmptype.MimeTypeFieldType{},
+			"identifier":  xmptype.TextFieldType{},
+			"language":    xmptype.LocaleFieldType{},
+			"publisher":   xmptype.ProperNameFieldType{},
+			"relation":    xmptype.TextFieldType{},
+			"rights":      xmptype.LanguageAlternativeArrayType{},
+			"source":      xmptype.TextFieldType{},
+			"subject":     xmptype.TextFieldType{},
+			"title":       xmptype.LanguageAlternativeArrayType{},
+			"type":        xmptype.TextFieldType{},
 		},
 	}
 

@@ -13,11 +13,18 @@ var (
 	typeLogger = log.NewLogger("xmpregistry.type")
 )
 
+var (
+	cachedPrefixes = make(map[string]string)
+)
+
 // XmlName is a localized version of xml.Name with a String() method attached.
 type XmlName xml.Name
 
-func (xn XmlName) String() string {
-	var prefix string
+func (xn XmlName) Prefix() string {
+	prefix, found := cachedPrefixes[xn.Space]
+	if found == true {
+		return prefix
+	}
 
 	ns, err := Get(xn.Space)
 	if err != nil {
@@ -30,6 +37,14 @@ func (xn XmlName) String() string {
 	} else {
 		prefix = ns.PreferredPrefix
 	}
+
+	cachedPrefixes[xn.Space] = prefix
+
+	return prefix
+}
+
+func (xn XmlName) String() string {
+	prefix := xn.Prefix()
 
 	return fmt.Sprintf("[%s]%s", prefix, xn.Local)
 }

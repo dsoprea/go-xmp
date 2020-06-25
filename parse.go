@@ -12,28 +12,13 @@ import (
 	"github.com/dsoprea/go-logging"
 	"github.com/dsoprea/go-unicode-byteorder"
 
+	"github.com/dsoprea/go-xmp/namespace"
 	"github.com/dsoprea/go-xmp/registry"
 	"github.com/dsoprea/go-xmp/type"
 )
 
 var (
 	parseLogger = log.NewLogger("xmp.parse")
-)
-
-const (
-	rdfXmlNamespace = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-)
-
-var (
-	rdfTag = xml.Name{
-		Space: rdfXmlNamespace,
-		Local: "RDF",
-	}
-
-	rdfDescriptionTag = xml.Name{
-		Space: rdfXmlNamespace,
-		Local: "Description",
-	}
 )
 
 var (
@@ -162,9 +147,9 @@ func (xp *Parser) isArrayNode(name xml.Name) (flag bool, err error) {
 		}
 	}
 
-	flag, err = isArrayType(nodeNamespace, nodeLocalName)
+	flag, err = xmptype.IsArrayType(nodeNamespace, nodeLocalName)
 	if err != nil {
-		if err == ErrChildFieldNotFound {
+		if err == xmptype.ErrChildFieldNotFound {
 			parseLogger.Warningf(
 				nil,
 				"Namespace [%s] for node [%s] is not known to have child [%s]. Skipping array check.",
@@ -188,7 +173,7 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 
 	xp.lastCharData = nil
 
-	if t.Name == rdfTag {
+	if t.Name == xmpnamespace.RdfTag {
 		if xp.rdfIsOpen == true {
 			log.Panicf("RDF is already open")
 		}
@@ -196,7 +181,7 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 		xp.rdfIsOpen = true
 
 		return nil
-	} else if t.Name == rdfDescriptionTag {
+	} else if t.Name == xmpnamespace.RdfDescriptionTag {
 		if xp.rdfDescriptionIsOpen == true {
 			log.Panicf("RDF description is already open")
 		}
@@ -209,72 +194,37 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 	nodeName := xmpregistry.XmlName(t.Name)
 	xp.nameStack = append(xp.nameStack, nodeName)
 
-	// Try to lookup and parse attributes.
-
-	for _, attribute := range t.Attr {
-		attributeNamespaceUri := attribute.Name.Space
-		attributeLocalName := attribute.Name.Local
-		attributeRawValue := attribute.Value
-
-		attributeNamespace, err := xmpregistry.Get(attributeNamespaceUri)
-		if err != nil {
-			if err == xmpregistry.ErrNamespaceNotFound {
-				if _, found := xp.unknownNamespaces[attributeNamespaceUri]; found == false {
-					parseLogger.Warningf(
-						nil,
-						"Namespace [%s] for attribute [%s] is not known. Skipping.",
-						attributeNamespaceUri, attributeLocalName)
-
-					xp.unknownNamespaces[attributeNamespaceUri] = struct{}{}
-				}
-
-				continue
-			}
-
-			log.Panic(err)
-		}
-
-		parsedValue, err := parseValue(attributeNamespace, attributeLocalName, attributeRawValue)
-		if err != nil {
-			if err == ErrChildFieldNotFound || err == xmptype.ErrValueNotValid {
-				parseLogger.Warningf(
-					nil,
-					"Could not parse attribute [%s] [%s] value: [%s]",
-					attributeNamespaceUri, attributeLocalName, attributeRawValue)
-
-				continue
-			}
-
-			log.Panic(err)
-		}
-
-		// TODO(dustin): !! Still need to store this value somewhere.
-		// fmt.Printf("Parsed ATTRIBUTE [%s] [%s] [%s] -> [%s] [%v]\n", namespaceUri, localName, rawValue, reflect.TypeOf(parsedValue), parsedValue)
-		parsedValue = parsedValue
-	}
-
 	// Determine if the current node is known to have an array underneath it.
 
 	isArray, err := xp.isArrayNode(t.Name)
 	log.PanicIf(err)
+
+	// Try to lookup and parse attributes.
+
+	attributes, err := xmptype.ParseAttributes(t)
+	log.PanicIf(err)
+
+	// TODO(dustin): !! Not yet doing anything with this.
+	attributes = attributes
 
 	// TODO(dustin): !! Build complex-type with xml.Node and attributes above.
 
 	if isArray == true {
 		// We've encountered a new array.
 
-		xpn := xmpregistry.XmpPropertyName(xp.nameStack)
-		fmt.Printf("Starting array: %s\n", xpn)
+		// xpn := xmpregistry.XmpPropertyName(xp.nameStack)
+		// fmt.Printf("Starting array: %s\n", xpn)
 
 		// TODO(dustin): !! Create array struct here and embed the complex-type struct from above.
 
 		xp.unfinishedArrayLayers = append(xp.unfinishedArrayLayers, make([]interface{}, 0))
 	} else if len(xp.unfinishedArrayLayers) > 0 {
 		// We've not encountered a new array but are currently inside a higher
-		// one. Append the current node to it.
+		// one. Append the current node to it. Since any attributes may be
+		// encapsulated, we defer to our array-management to extract them.
 
-		xpn := xmpregistry.XmpPropertyName(xp.nameStack)
-		fmt.Printf("Collecting within array: %s\n", xpn)
+		// xpn := xmpregistry.XmpPropertyName(xp.nameStack)
+		// fmt.Printf("Collecting within array: %s\n", xpn)
 
 		// TODO(dustin): !! Wrap token with complex-type struct from above.
 
@@ -297,7 +247,7 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 		}
 	}()
 
-	if t.Name == rdfTag {
+	if t.Name == xmpnamespace.RdfTag {
 		if xp.rdfIsOpen == false {
 			log.Panicf("RDF is not open")
 		}
@@ -305,7 +255,7 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 		xp.rdfIsOpen = false
 
 		return nil
-	} else if t.Name == rdfDescriptionTag {
+	} else if t.Name == xmpnamespace.RdfDescriptionTag {
 		if xp.rdfDescriptionIsOpen == false {
 			log.Panicf("RDF description is not open")
 		}
@@ -320,8 +270,36 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 	}
 
 	if xp.lastCharData != nil {
-		err := xp.parseCharData(xpi, t.Name, *xp.lastCharData)
-		log.PanicIf(err)
+		charData := strings.Trim(*xp.lastCharData, " \t\r\n")
+
+		if t.Name == xmpnamespace.RdfLiTag {
+			if len(xp.unfinishedArrayLayers) == 0 {
+				// We encountered an array item under a namespace that we don't
+				// recognize.
+
+				xpn := xmpregistry.XmpPropertyName(xp.nameStack)
+
+				parseLogger.Warningf(
+					nil,
+					"We encountered an array item that wasn't in an array, likely because it is in an unregistered namespace: [%s]",
+					xpn)
+
+				fmt.Printf("We encountered an array item that wasn't in an array: [%s]\n", xpn)
+			} else {
+				// This is an array item. Since the value is encapsulated, it will
+				// need to be extracted before parsing. So, we just push the raw
+				// element and defer to our array management to do that.
+
+				// xpn := xmpregistry.XmpPropertyName(xp.nameStack)
+				// fmt.Printf("Adding char-data from [%s]: [%s]\n", xpn, charData)
+
+				currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
+				xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], charData)
+			}
+		} else {
+			err := xp.parseCharData(xpi, t.Name, charData)
+			log.PanicIf(err)
+		}
 
 		xp.lastCharData = nil
 	}
@@ -357,7 +335,7 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 	}
 
 	if arrayType != nil {
-		// We've encountered a new array.
+		// We're closing an array.
 
 		currentUnfinishedLayerNumber := len(xp.unfinishedArrayLayers) - 1
 		finishedArray := xp.unfinishedArrayLayers[currentUnfinishedLayerNumber]
@@ -377,7 +355,7 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 		}
 
 		xpn := xmpregistry.XmpPropertyName(xp.nameStack)
-		fmt.Printf("Finished array: %s\n", xpn)
+		// fmt.Printf("Finished array: %s\n", xpn)
 
 		wrappedArray := arrayType.New(xpn, finishedArray)
 
@@ -388,8 +366,8 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 		// We've not closed an array but are currently inside a higher one.
 		// Append the current node to it.
 
-		xpn := xmpregistry.XmpPropertyName(xp.nameStack)
-		fmt.Printf("Collecting within array: %s\n", xpn)
+		// xpn := xmpregistry.XmpPropertyName(xp.nameStack)
+		// fmt.Printf("Collecting within array: %s\n", xpn)
 
 		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
 		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], t)
@@ -410,12 +388,11 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 		}
 	}()
 
-	// This is an array item. This is handled in the tag-close handler.
-	if nodeName.Local == "li" {
-		return nil
-	}
+	xpn := xmpregistry.XmpPropertyName(xp.nameStack)
 
 	// Parse a normal node.
+
+	fmt.Printf("parseCharData: [%s]\n", xpn)
 
 	namespaceUri := nodeName.Space
 	localName := nodeName.Local
@@ -436,15 +413,17 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 				xp.unknownNamespaces[namespaceUri] = struct{}{}
 			}
 
+			fmt.Printf("parseCharData: No namespace\n")
+
 			return nil
 		}
 
 		log.Panic(err)
 	}
 
-	parsedValue, err := parseValue(namespace, localName, rawValue)
+	parsedValue, err := xmptype.ParseValue(namespace, localName, rawValue)
 	if err != nil {
-		if err == ErrChildFieldNotFound || err == xmptype.ErrValueNotValid {
+		if err == xmptype.ErrChildFieldNotFound || err == xmptype.ErrValueNotValid {
 			parseLogger.Warningf(
 				nil,
 				"Could not parse char-data under node [%s] [%s] value: [%s]",
@@ -454,6 +433,8 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 				"Could not parse char-data under node [%s] [%s] value: [%s]\n",
 				namespaceUri, localName, rawValue)
 
+			fmt.Printf("parseCharData: Parse failed\n")
+
 			return nil
 		}
 
@@ -461,8 +442,6 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 	}
 
 	fmt.Printf("Parsed CHAR-DATA [%s] [%s] [%s] -> [%s] [%v]\n", namespaceUri, localName, rawValue, reflect.TypeOf(parsedValue), parsedValue)
-
-	xpn := xmpregistry.XmpPropertyName(xp.nameStack)
 
 	if len(xp.unfinishedArrayLayers) > 0 {
 		// We're currently collecting items for an array. Append the char-data
@@ -472,7 +451,6 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 
 		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
 		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], parsedValue)
-
 	} else {
 		// This is a non-array-item value-node.
 

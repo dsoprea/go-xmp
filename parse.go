@@ -79,7 +79,6 @@ type Parser struct {
 	xd *xml.Decoder
 
 	// TODO(dustin): !! Add an accessor for this. Investigate whether we even have this value in our test-data.
-	// encodingSequence will be nil if xpacket has empty "start" value.
 	bomEncoding  bom.Encoding
 	bomByteOrder binary.ByteOrder
 
@@ -93,8 +92,6 @@ type Parser struct {
 	lastCharData *string
 	lastToken    xml.Token
 
-	unknownNamespaces map[string]struct{}
-
 	unfinishedArrayLayers [][]interface{}
 }
 
@@ -104,15 +101,11 @@ func NewParser(r io.Reader) *Parser {
 
 	nameStack := make([]xmpregistry.XmlName, 0)
 
-	unknownNamespaces := make(map[string]struct{})
-
 	unfinishedArrayLayers := make([][]interface{}, 0)
 
 	return &Parser{
-		xd:                xd,
-		nameStack:         nameStack,
-		unknownNamespaces: unknownNamespaces,
-
+		xd:                    xd,
+		nameStack:             nameStack,
 		unfinishedArrayLayers: unfinishedArrayLayers,
 	}
 }
@@ -130,15 +123,6 @@ func (xp *Parser) isArrayNode(name xml.Name) (flag bool, err error) {
 	nodeNamespace, err := xmpregistry.Get(nodeNamespaceUri)
 	if err != nil {
 		if err == xmpregistry.ErrNamespaceNotFound {
-			if _, found := xp.unknownNamespaces[nodeNamespaceUri]; found == false {
-				parseLogger.Warningf(
-					nil,
-					"Namespace [%s] for node [%s] is not known. Skipping array check.",
-					nodeNamespaceUri, nodeLocalName)
-
-				xp.unknownNamespaces[nodeNamespaceUri] = struct{}{}
-			}
-
 			return false, nil
 		} else {
 			log.Panic(err)
@@ -222,7 +206,7 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 		if len(attributes) > 0 {
 			xpn := xmpregistry.XmpPropertyName(xp.nameStack)
 
-			err := xpi.addComplexNode(xpn, attributes)
+			err := xpi.addComplexValue(xpn, attributes)
 			log.PanicIf(err)
 		}
 	}
@@ -298,25 +282,14 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 
 	var arrayType xmptype.ArrayType
 
-	if nodeNamespace, err := xmpregistry.Get(nodeNamespaceUri); err != nil {
-		if err == xmpregistry.ErrNamespaceNotFound {
-			if _, found := xp.unknownNamespaces[nodeNamespaceUri]; found == false {
-				parseLogger.Warningf(
-					nil,
-					"Namespace [%s] for node [%s] is not known. Skipping array check.",
-					nodeNamespaceUri, nodeLocalName)
-
-				xp.unknownNamespaces[nodeNamespaceUri] = struct{}{}
-			}
-		} else {
-			log.Panic(err)
-		}
-	} else {
+	if nodeNamespace, err := xmpregistry.Get(nodeNamespaceUri); err == nil {
 		if ft, found := nodeNamespace.Fields[nodeLocalName]; found == true {
 			if t, ok := ft.(xmptype.ArrayType); ok == true {
 				arrayType = t
 			}
 		}
+	} else if err != xmpregistry.ErrNamespaceNotFound {
+		log.Panic(err)
 	}
 
 	if arrayType != nil {
@@ -379,15 +352,6 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 	namespace, err := xmpregistry.Get(namespaceUri)
 	if err != nil {
 		if err == xmpregistry.ErrNamespaceNotFound {
-			if _, found := xp.unknownNamespaces[namespaceUri]; found == false {
-				parseLogger.Warningf(
-					nil,
-					"Namespace [%s] for node [%s] with char-data is not known. Skipping.",
-					namespaceUri, localName)
-
-				xp.unknownNamespaces[namespaceUri] = struct{}{}
-			}
-
 			return nil
 		}
 

@@ -8,9 +8,17 @@ import (
 )
 
 var (
+	namespaceLogger = log.NewLogger("xmpregistry.namespace")
+)
+
+var (
 	// ErrNamespaceNotFound indicates that a namespace was requested that is
 	// not registered.
 	ErrNamespaceNotFound = errors.New("namespace not found")
+)
+
+var (
+	unknownNamespaces = make(map[string]struct{})
 )
 
 // Namespace describes the information about a single namespace.
@@ -55,6 +63,17 @@ func Get(uri string) (namespace Namespace, err error) {
 	namespace, found := namespaces[uri]
 
 	if found == false {
+		if err == ErrNamespaceNotFound {
+			if _, found := unknownNamespaces[uri]; found == false {
+				namespaceLogger.Warningf(
+					nil,
+					"Namespace [%s] was requested but is not known.",
+					uri)
+
+				unknownNamespaces[uri] = struct{}{}
+			}
+		}
+
 		return Namespace{}, ErrNamespaceNotFound
 	}
 

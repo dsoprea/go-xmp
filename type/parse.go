@@ -35,7 +35,6 @@ func ParseValue(namespace xmpregistry.Namespace, fieldName string, rawValue stri
 
 	namespaceUri := namespace.Uri
 
-	// TODO(dustin): !! Drop support for complex types and field-mapping type to be map[string]ScalarFieldType.
 	sft, ok := ft.(ScalarFieldType)
 	if ok == false {
 		log.Panicf("scalar value field did not return a scalar parser: NS=[%s] FIELD=[%s] TYPE=[%v]", namespaceUri, fieldName, reflect.TypeOf(ft))
@@ -86,17 +85,6 @@ func ParseAttributes(se xml.StartElement) (attributes map[xml.Name]interface{}, 
 		attributeNamespace, err := xmpregistry.Get(attributeNamespaceUri)
 		if err != nil {
 			if err == xmpregistry.ErrNamespaceNotFound {
-				// TODO(dustin): Add a package-level method to get namespaces or warn once if not available.
-
-				// if _, found := xp.unknownNamespaces[attributeNamespaceUri]; found == false {
-				parseLogger.Warningf(
-					nil,
-					"Namespace [%s] for attribute [%s] is not known. Skipping.",
-					attributeNamespaceUri, attributeLocalName)
-
-				// xp.unknownNamespaces[attributeNamespaceUri] = struct{}{}
-				// }
-
 				continue
 			}
 

@@ -56,94 +56,96 @@ func (xpi *XmpPropertyIndex) name() xmpregistry.XmlName {
 	return xpi.nodeName
 }
 
-type scalarLeafNode struct {
-	namespace   xmpregistry.Namespace
-	fieldName   string
-	parsedValue interface{}
-}
-
-func (xpi *XmpPropertyIndex) addArrayValue(name xmpregistry.XmpPropertyName, array xmptype.ArrayValue) (err error) {
+func (xpi *XmpPropertyIndex) addValue(xpn xmpregistry.XmpPropertyName, value interface{}) (err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
 		}
 	}()
 
-	// TODO(dustin): !! Just for exploration/debugging.
-	stringLister, ok := array.(xmptype.ArrayStringValueLister)
-	if ok == true {
-		items, err := stringLister.Items()
-		log.PanicIf(err)
-
-		items = items
-
-		fmt.Printf("Indexing array value: [%s]\n", name)
-
-		for i, value := range items {
-			fmt.Printf("(%d)> [%s]\n", i, value)
-		}
-
-		fmt.Printf("\n")
-	}
-
-	// TODO(dustin): !! Finish
-
-	return nil
-}
-
-func (xpi *XmpPropertyIndex) addScalarValue(name xmpregistry.XmpPropertyName, parsedValue interface{}) (err error) {
-	defer func() {
-		if errRaw := recover(); errRaw != nil {
-			err = log.Wrap(errRaw.(error))
-		}
-	}()
-
-	currentNodeName := name[0]
+	currentNodeName := xpn[0]
 	currentNodeNamePhrase := currentNodeName.String()
 
-	if len(name) > 1 {
+	if len(xpn) > 1 {
 		subindex, found := xpi.subindices[currentNodeNamePhrase]
 
 		if found == false {
 			subindex = newXmpPropertyIndex(currentNodeName)
 		}
 
-		err := subindex.addScalarValue(name[1:], parsedValue)
+		err := subindex.addValue(xpn[1:], value)
 		log.PanicIf(err)
 
 		if found == false {
 			xpi.subindices[currentNodeNamePhrase] = subindex
 		}
 	} else {
-		namespace, err := xmpregistry.Get(currentNodeName.Space)
-		log.PanicIf(err)
-
-		sln := scalarLeafNode{
-			namespace:   namespace,
-			fieldName:   currentNodeName.Local,
-			parsedValue: parsedValue,
-		}
-
 		if currentLeaves, found := xpi.leaves[currentNodeNamePhrase]; found == true {
-			xpi.leaves[currentNodeNamePhrase] = append(currentLeaves, sln)
+			xpi.leaves[currentNodeNamePhrase] = append(currentLeaves, value)
 		} else {
-			xpi.leaves[currentNodeNamePhrase] = []interface{}{sln}
+			xpi.leaves[currentNodeNamePhrase] = []interface{}{value}
 		}
 	}
 
 	return nil
 }
 
-func (xpi *XmpPropertyIndex) addComplexNode(xpn xmpregistry.XmpPropertyName, attributes map[xml.Name]interface{}) (err error) {
+func (xpi *XmpPropertyIndex) addArrayValue(xpn xmpregistry.XmpPropertyName, array xmptype.ArrayValue) (err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
 		}
 	}()
 
-	fmt.Printf("addComplexNode: %s: %s\n", xpn, xmpregistry.InlineAttributes(attributes))
+	err = xpi.addValue(xpn, array)
+	log.PanicIf(err)
 
-	// TODO(dustin): !! Finish
+	return nil
+}
+
+type ScalarLeafNode struct {
+	Namespace   xmpregistry.Namespace
+	FieldName   string
+	ParsedValue interface{}
+}
+
+func (xpi *XmpPropertyIndex) addScalarValue(xpn xmpregistry.XmpPropertyName, parsedValue interface{}) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	currentNodeName := xpn[len(xpn)-1]
+
+	namespace, err := xmpregistry.Get(currentNodeName.Space)
+	log.PanicIf(err)
+
+	sln := ScalarLeafNode{
+		Namespace:   namespace,
+		FieldName:   currentNodeName.Local,
+		ParsedValue: parsedValue,
+	}
+
+	err = xpi.addValue(xpn, sln)
+	log.PanicIf(err)
+
+	return nil
+}
+
+type ComplexLeafNode map[xml.Name]interface{}
+
+func (xpi *XmpPropertyIndex) addComplexValue(xpn xmpregistry.XmpPropertyName, attributes map[xml.Name]interface{}) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	cn := ComplexLeafNode(attributes)
+
+	err = xpi.addValue(xpn, cn)
+	log.PanicIf(err)
 
 	return nil
 }
@@ -197,7 +199,38 @@ func (xpi *XmpPropertyIndex) dump(prefix []string) {
 		fqNamePhrase := strings.Join(fqName, ".")
 
 		for _, value := range values {
-			fmt.Printf("%s = [%s] [%v]\n", fqNamePhrase, reflect.TypeOf(value), value)
+			if sl, ok := value.(xmptype.ArrayStringValueLister); ok == true {
+				items, err := sl.Items()
+				log.PanicIf(err)
+
+				fmt.Printf("%s:\n\n  ARRAY [%s]\n  COUNT (%d)\n", fqNamePhrase, reflect.TypeOf(sl), len(items))
+				fmt.Printf("\n")
+
+				for i, item := range items {
+					fmt.Printf("  Item (%d): [%s] %v\n", i, reflect.TypeOf(item), item)
+				}
+
+				fmt.Printf("\n")
+
+			} else if sln, ok := value.(ScalarLeafNode); ok == true {
+				fmt.Printf("%s:\n\n   SCALAR\n", fqNamePhrase)
+				fmt.Printf("\n")
+
+				fmt.Printf("  [%s]%s = [%s] [%v]\n", sln.Namespace.PreferredPrefix, sln.FieldName, reflect.TypeOf(sln.ParsedValue), sln.ParsedValue)
+
+				fmt.Printf("\n")
+			} else if cln, ok := value.(ComplexLeafNode); ok == true {
+				fmt.Printf("%s:\n\n  COMPLEX\n", fqNamePhrase)
+				fmt.Printf("\n")
+
+				for name, value := range cln {
+					fmt.Printf("  %s: [%s] [%v]\n", xmpregistry.XmlName(name), reflect.TypeOf(value), value)
+				}
+
+				fmt.Printf("\n")
+			} else {
+				log.Panicf("can not dump unhandled value: [%v]", reflect.TypeOf(value))
+			}
 		}
 	}
 }

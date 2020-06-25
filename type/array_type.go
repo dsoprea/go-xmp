@@ -268,8 +268,6 @@ func (oat OrderedArrayType) New(fullName xmpregistry.XmpPropertyName, collected 
 	}
 }
 
-// TODO(dustin): We're not sure abotu these type-specific arrays yet. However, if we don't use specific types here than we'll need a lot more reflection later.
-
 type OrderedTextArrayType struct {
 	OrderedArrayType
 }
@@ -454,14 +452,12 @@ func (laav LanguageAlternativeArrayValue) Items() (items []string, err error) {
 		}
 	}()
 
-	// TODO(dustin): Use accessors to access lower-level data.
-
 	innerItems, err := laav.AlternativeArrayValue.Items()
 	log.PanicIf(err)
 
 	items = make([]string, len(innerItems))
 	for i, ai := range innerItems {
-		items[i] = fmt.Sprintf("%s: %s", ai.InlineAttributes(), ai.CharData)
+		items[i] = fmt.Sprintf("{%s} [%s]", ai.InlineAttributes(), ai.CharData)
 	}
 
 	return items, nil

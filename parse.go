@@ -1,9 +1,7 @@
 package xmp
 
 import (
-	"fmt"
 	"io"
-	"reflect"
 	"strings"
 
 	"encoding/binary"
@@ -283,15 +281,10 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 					nil,
 					"We encountered an array item that wasn't in an array, likely because it is in an unregistered namespace: [%s]",
 					xpn)
-
-				fmt.Printf("We encountered an array item that wasn't in an array: [%s]\n", xpn)
 			} else {
 				// This is an array item. Since the value is encapsulated, it will
 				// need to be extracted before parsing. So, we just push the raw
 				// element and defer to our array management to do that.
-
-				// xpn := xmpregistry.XmpPropertyName(xp.nameStack)
-				// fmt.Printf("Adding char-data from [%s]: [%s]\n", xpn, charData)
 
 				currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
 				xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], charData)
@@ -355,7 +348,6 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 		}
 
 		xpn := xmpregistry.XmpPropertyName(xp.nameStack)
-		// fmt.Printf("Finished array: %s\n", xpn)
 
 		wrappedArray := arrayType.New(xpn, finishedArray)
 
@@ -365,9 +357,6 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 	} else if len(xp.unfinishedArrayLayers) > 0 {
 		// We've not closed an array but are currently inside a higher one.
 		// Append the current node to it.
-
-		// xpn := xmpregistry.XmpPropertyName(xp.nameStack)
-		// fmt.Printf("Collecting within array: %s\n", xpn)
 
 		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
 		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], t)
@@ -392,8 +381,6 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 
 	// Parse a normal node.
 
-	fmt.Printf("parseCharData: [%s]\n", xpn)
-
 	namespaceUri := nodeName.Space
 	localName := nodeName.Local
 
@@ -406,14 +393,8 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 					"Namespace [%s] for node [%s] with char-data is not known. Skipping.",
 					namespaceUri, localName)
 
-				fmt.Printf(
-					"Namespace [%s] for node [%s] with char-data is not known. Skipping.\n",
-					namespaceUri, localName)
-
 				xp.unknownNamespaces[namespaceUri] = struct{}{}
 			}
-
-			fmt.Printf("parseCharData: No namespace\n")
 
 			return nil
 		}
@@ -429,32 +410,20 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 				"Could not parse char-data under node [%s] [%s] value: [%s]",
 				namespaceUri, localName, rawValue)
 
-			fmt.Printf(
-				"Could not parse char-data under node [%s] [%s] value: [%s]\n",
-				namespaceUri, localName, rawValue)
-
-			fmt.Printf("parseCharData: Parse failed\n")
-
 			return nil
 		}
 
 		log.Panic(err)
 	}
 
-	fmt.Printf("Parsed CHAR-DATA [%s] [%s] [%s] -> [%s] [%v]\n", namespaceUri, localName, rawValue, reflect.TypeOf(parsedValue), parsedValue)
-
 	if len(xp.unfinishedArrayLayers) > 0 {
 		// We're currently collecting items for an array. Append the char-data
 		// to the collector slice.
-
-		fmt.Printf("Char-data WITHIN array: %s\n", xpn)
 
 		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
 		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], parsedValue)
 	} else {
 		// This is a non-array-item value-node.
-
-		fmt.Printf("Char-data NOT WITHIN array: %s\n", xpn)
 
 		err := xpi.addScalarValue(xpn, parsedValue)
 		log.PanicIf(err)

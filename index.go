@@ -147,14 +147,12 @@ func (xpi *XmpPropertyIndex) Get(namePhraseSlice []string) (results []interface{
 		subindex, found := xpi.subindices[currentNodeNamePhrase]
 
 		if found == false {
-			fmt.Printf("ErrFieldNotFound (3)\n")
 			return nil, ErrFieldNotFound
 		}
 
 		values, err := subindex.Get(namePhraseSlice[1:])
 		if err != nil {
 			if err == ErrFieldNotFound {
-				fmt.Printf("ErrFieldNotFound (4)\n")
 				return nil, err
 			}
 
@@ -169,8 +167,6 @@ func (xpi *XmpPropertyIndex) Get(namePhraseSlice []string) (results []interface{
 	if wrappedValues, found := xpi.leaves[currentNodeNamePhrase]; found == true {
 		return wrappedValues, nil
 	}
-
-	fmt.Printf("ErrFieldNotFound (5)\n")
 
 	return nil, ErrFieldNotFound
 }

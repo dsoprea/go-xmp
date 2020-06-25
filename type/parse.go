@@ -2,7 +2,6 @@ package xmptype
 
 import (
 	"errors"
-	"fmt"
 	"reflect"
 
 	"encoding/xml"
@@ -31,7 +30,6 @@ func ParseValue(namespace xmpregistry.Namespace, fieldName string, rawValue stri
 
 	ft, found := namespace.Fields[fieldName]
 	if found == false {
-		fmt.Printf("Could not find field [%s] in namespace [%s] (parseValue)\n", fieldName, namespace.PreferredPrefix)
 		return nil, ErrChildFieldNotFound
 	}
 
@@ -48,9 +46,6 @@ func ParseValue(namespace xmpregistry.Namespace, fieldName string, rawValue stri
 	parsedValue, err = parser.Parse()
 	if err != nil {
 		parseLogger.Warningf(nil, "Could not parse value: NS=[%s] FIELD=[%s] VALUE=[%s]", namespaceUri, fieldName, rawValue)
-
-		fmt.Printf("Could not parse value: NS=[%s] FIELD=[%s] VALUE=[%s]\n", namespaceUri, fieldName, rawValue)
-
 		return nil, err
 	}
 

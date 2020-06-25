@@ -255,8 +255,6 @@ func (oav OrderedArrayValue) Items() (items []ArrayItem, err error) {
 		}
 	}()
 
-	fmt.Printf("Items(): OrderedArrayValue: %s\n", oav.FullName())
-
 	err = oav.validateAnchorElements(oav.baseArrayValue.collected, rdfSeqTag)
 	log.PanicIf(err)
 
@@ -431,8 +429,6 @@ func (aav AlternativeArrayValue) Items() (items []ArrayItem, err error) {
 			err = log.Wrap(errRaw.(error))
 		}
 	}()
-
-	fmt.Printf("Items(): AlternativeArrayValue: %s\n", aav.FullName())
 
 	err = aav.validateAnchorElements(aav.baseArrayValue.collected, rdfAltTag)
 	log.PanicIf(err)

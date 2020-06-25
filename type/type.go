@@ -2,6 +2,14 @@ package xmptype
 
 import (
 	"errors"
+
+	"encoding/xml"
+
+	"github.com/dsoprea/go-logging"
+)
+
+var (
+	typeLogger = log.NewLogger("xmp.type")
 )
 
 var (
@@ -100,55 +108,95 @@ type ScalarValueParser interface {
 
 // TODO(dustin): !! Finish implementing the array-handling logic below.
 
-type Array interface {
+type ArrayValue interface {
+	FullName() []xml.Name
 	Count() int
 }
 
-type OrderedArray struct {
+type ArrayType interface {
+	New(fullName []xml.Name, collected []interface{}) ArrayValue
 }
 
-func (oa OrderedArray) Count() int {
-
-	// TODO(dustin): !! Finish
-
-	return 0
+type BaseArrayValue struct {
+	fullName  []xml.Name
+	collected []interface{}
 }
 
-type OrderedTextArray struct {
-	OrderedArray
+func (bav BaseArrayValue) FullName() []xml.Name {
+	return bav.fullName
 }
 
-type OrderedUriArray struct {
-	OrderedArray
+func (bav BaseArrayValue) Count() int {
+	return len(bav.collected)
 }
 
-type OrderedResourceEventArray struct {
-	OrderedArray
-}
+// Ordered array semantics
 
 // TODO(dustin): Ordered array yet-to-implement: CuePointParam, Marker, ResourceEvent, Version, Colorant, Marker, Layer, "point" (?)
+
+type OrderedArrayValue struct {
+	BaseArrayValue
+}
+
+type OrderedArrayType struct {
+}
+
+func (oat OrderedArrayType) New(fullName []xml.Name, collected []interface{}) ArrayValue {
+	return OrderedArrayValue{
+		BaseArrayValue: BaseArrayValue{
+			fullName:  fullName,
+			collected: collected,
+		},
+	}
+}
+
+type OrderedTextArrayType struct {
+	OrderedArrayType
+}
+
+type OrderedUriArrayType struct {
+	OrderedArrayType
+}
+
+type OrderedResourceEventArrayType struct {
+	OrderedArrayType
+}
+
+// Unordered array semantics
+
 // TODO(dustin): Unordered array yet-to-implement: XPath, ResourceRef, "struct" (?), Job, Font, Media, Track, Ancestor
 
-type UnorderedArray struct {
+type UnorderedArrayValue struct {
+	BaseArrayValue
 }
 
-func (ua UnorderedArray) Count() int {
-
-	// TODO(dustin): !! Finish
-
-	return 0
+type UnorderedArrayType struct {
 }
 
-type UnorderedTextArray struct {
-	UnorderedArray
+func (uat UnorderedArrayType) New(fullName []xml.Name, collected []interface{}) ArrayValue {
+	return UnorderedArrayValue{
+		BaseArrayValue: BaseArrayValue{
+			fullName:  fullName,
+			collected: collected,
+		},
+	}
 }
 
-type AlternativeArray struct {
+type UnorderedTextArrayType struct {
+	UnorderedArrayType
 }
 
-func (aa AlternativeArray) Count() int {
+// Alternatives array semantics
 
-	// TODO(dustin): !! Finish
+type AlternativeArrayType struct {
+	BaseArrayValue
+}
 
-	return 0
+func (aat AlternativeArrayType) New(fullName []xml.Name, collected []interface{}) ArrayValue {
+	return AlternativeArrayType{
+		BaseArrayValue: BaseArrayValue{
+			fullName:  fullName,
+			collected: collected,
+		},
+	}
 }

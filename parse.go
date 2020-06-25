@@ -86,7 +86,7 @@ func (raa rawAttributeAssignment) parse() (string, string) {
 	return name, value
 }
 
-type arrayInstance struct {
+type EmbeddedArray struct {
 	name      xml.Name
 	collected []interface{}
 }
@@ -152,6 +152,8 @@ func (xp *Parser) isArrayNode(name xml.Name) (flag bool, err error) {
 					nil,
 					"Namespace [%s] for node [%s] is not known. Skipping array check.",
 					nodeNamespaceUri, nodeLocalName)
+
+				xp.unknownNamespaces[nodeNamespaceUri] = struct{}{}
 			}
 
 			return false, nil
@@ -222,6 +224,8 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 						nil,
 						"Namespace [%s] for attribute [%s] is not known. Skipping.",
 						attributeNamespaceUri, attributeLocalName)
+
+					xp.unknownNamespaces[attributeNamespaceUri] = struct{}{}
 				}
 
 				continue
@@ -254,13 +258,15 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 	isArray, err := xp.isArrayNode(t.Name)
 	log.PanicIf(err)
 
+	// TODO(dustin): !! Build complex-type with xml.Node and attributes above.
+
 	if isArray == true {
 		// We've encountered a new array.
 
 		xpn := XmpPropertyName(xp.nameStack)
 		fmt.Printf("Starting array: %s\n", xpn)
 
-		// TODO(dustin): !! Might want to capture the parsed attributes here.
+		// TODO(dustin): !! Create array struct here and embed the complex-type struct from above.
 
 		xp.unfinishedArrayLayers = append(xp.unfinishedArrayLayers, make([]interface{}, 0))
 	} else if len(xp.unfinishedArrayLayers) > 0 {
@@ -270,10 +276,15 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 		xpn := XmpPropertyName(xp.nameStack)
 		fmt.Printf("Collecting within array: %s\n", xpn)
 
-		// TODO(dustin): !! Might want to capture the parsed attributes here.
+		// TODO(dustin): !! Wrap token with complex-type struct from above.
 
 		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
 		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], t)
+	} else {
+		// This is a simple leaf node that is not an array nor underneath an
+		// array.
+
+		// TODO(dustin): !! Push complex-type to index.
 	}
 
 	return nil
@@ -309,7 +320,7 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 	}
 
 	if xp.lastCharData != nil {
-		err := xp.parseCharData(t.Name, *xp.lastCharData)
+		err := xp.parseCharData(xpi, t.Name, *xp.lastCharData)
 		log.PanicIf(err)
 
 		xp.lastCharData = nil
@@ -317,30 +328,61 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 
 	// Process the array-end if this node was known to be an array.
 
-	isArray, err := xp.isArrayNode(t.Name)
-	log.PanicIf(err)
+	nodeNamespaceUri := name.Space
+	nodeLocalName := name.Local
 
-	if isArray == true {
+	// If the current node is an array-type, get the struct that represents it.
+
+	var arrayType xmptype.ArrayType
+
+	if nodeNamespace, err := xmpnamespace.Get(nodeNamespaceUri); err != nil {
+		if err == xmpnamespace.ErrNamespaceNotFound {
+			if _, found := xp.unknownNamespaces[nodeNamespaceUri]; found == false {
+				parseLogger.Warningf(
+					nil,
+					"Namespace [%s] for node [%s] is not known. Skipping array check.",
+					nodeNamespaceUri, nodeLocalName)
+
+				xp.unknownNamespaces[nodeNamespaceUri] = struct{}{}
+			}
+		} else {
+			log.Panic(err)
+		}
+	} else {
+		if ft, found := nodeNamespace.Fields[nodeLocalName]; found == true {
+			if t, ok := ft.(xmptype.Array); ok == true {
+				arrayType = t
+			}
+		}
+	}
+
+	if arrayType != nil {
 		// We've encountered a new array.
 
 		currentUnfinishedLayerNumber := len(xp.unfinishedArrayLayers) - 1
+		finishedArray := xp.unfinishedArrayLayers[currentUnfinishedLayerNumber]
 
-		ai := arrayInstance{
+		ea := EmbeddedArray{
 			name:      t.Name,
-			collected: xp.unfinishedArrayLayers[currentUnfinishedLayerNumber],
+			collected: finishedArray,
 		}
 
 		xp.unfinishedArrayLayers = xp.unfinishedArrayLayers[:currentUnfinishedLayerNumber]
 
 		if len(xp.unfinishedArrayLayers) > 0 {
 			newUnfinishedLayerNumber := len(xp.unfinishedArrayLayers) - 1
-			xp.unfinishedArrayLayers[newUnfinishedLayerNumber] = append(xp.unfinishedArrayLayers[newUnfinishedLayerNumber], ai)
+			xp.unfinishedArrayLayers[newUnfinishedLayerNumber] = append(
+				xp.unfinishedArrayLayers[newUnfinishedLayerNumber],
+				ea)
 		}
 
 		xpn := XmpPropertyName(xp.nameStack)
 		fmt.Printf("Finished array: %s\n", xpn)
 
-		// TODO(dustin): !! Flatten and finish the array-instance into the index. Note that arrays within arrays will appear as separate instances: The lower arrays are directly indexable as well as able to be found within the items of the higher arrays.
+		wrappedArray := arrayType.New(xp.nameStack, finishedArray)
+
+		err := xpi.addArrayValue(xpn, wrappedArray)
+		log.PanicIf(err)
 
 	} else if len(xp.unfinishedArrayLayers) > 0 {
 		// We've not closed an array but are currently inside a higher one.
@@ -351,8 +393,6 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 
 		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
 		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], t)
-
-		// TODO(dustin): !! We probably want to capture the parsed char-data, here.
 	}
 
 	// Go already validates that the tags are balanced.
@@ -363,7 +403,7 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 
 // parseCharData parses the char-data that exists in leaf-nodes (not in nodes
 // that have child-nodes).
-func (xp *Parser) parseCharData(nodeName xml.Name, rawValue string) (err error) {
+func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawValue string) (err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -392,6 +432,8 @@ func (xp *Parser) parseCharData(nodeName xml.Name, rawValue string) (err error) 
 				fmt.Printf(
 					"Namespace [%s] for node [%s] with char-data is not known. Skipping.\n",
 					namespaceUri, localName)
+
+				xp.unknownNamespaces[namespaceUri] = struct{}{}
 			}
 
 			return nil
@@ -418,9 +460,27 @@ func (xp *Parser) parseCharData(nodeName xml.Name, rawValue string) (err error) 
 		log.Panic(err)
 	}
 
-	// TODO(dustin): !! Still need to store this value somewhere.
 	fmt.Printf("Parsed CHAR-DATA [%s] [%s] [%s] -> [%s] [%v]\n", namespaceUri, localName, rawValue, reflect.TypeOf(parsedValue), parsedValue)
-	parsedValue = parsedValue
+
+	xpn := XmpPropertyName(xp.nameStack)
+
+	if len(xp.unfinishedArrayLayers) > 0 {
+		// We're currently collecting items for an array. Append the char-data
+		// to the collector slice.
+
+		fmt.Printf("Char-data WITHIN array: %s\n", xpn)
+
+		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
+		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], parsedValue)
+
+	} else {
+		// This is a non-array-item value-node.
+
+		fmt.Printf("Char-data NOT WITHIN array: %s\n", xpn)
+
+		err := xpi.addScalarValue(xpn, parsedValue)
+		log.PanicIf(err)
+	}
 
 	return nil
 }

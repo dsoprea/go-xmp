@@ -54,9 +54,9 @@ func (xpi *XmpPropertyIndex) name() XmlName {
 }
 
 type scalarLeafNode struct {
-	namespace xmpnamespace.Namespace
-	fieldName string
-	rawValue  string
+	namespace   xmpnamespace.Namespace
+	fieldName   string
+	parsedValue interface{}
 }
 
 func (sln scalarLeafNode) Parse() (parsed interface{}, err error) {
@@ -93,100 +93,19 @@ func (sln scalarLeafNode) Parse() (parsed interface{}, err error) {
 	return parsed, nil
 }
 
-// type complexLeafNode struct {
-// 	cft            xmptype.ComplexFieldType
-// 	nodeAttributes []xml.Attr
-// }
+func (xpi *XmpPropertyIndex) addArrayValue(name XmpPropertyName, array xmptype.ArrayValue) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
 
-// func (cln complexLeafNode) Parse() (parsed interface{}, err error) {
-// 	defer func() {
-// 		if errRaw := recover(); errRaw != nil {
-// 			err = log.Wrap(errRaw.(error))
-// 		}
-// 	}()
+	// TODO(dustin): !! Finish
 
-// 	namespace := cln.cft.Namespace()
+	return nil
+}
 
-// 	info := make(map[string]interface{})
-
-// 	for _, attr := range cln.nodeAttributes {
-// 		// TODO(dustin): This is gonna cause an issue when the attributes include attributes for two or more namespaces. We really need to lookup the complex types for each namespace of each attribute on the fly.
-// 		ft, err := cln.cft.ChildFieldType(attr.Name.Local)
-// 		if err != nil {
-// 			if err == xmptype.ErrChildFieldNotValid {
-// 				indexLogger.Warningf(nil, "Attribute [%s] [%s] is not known.", namespace, attr.Name.Local)
-// 				continue
-// 			}
-
-// 			log.Panic(err)
-// 		}
-
-// 		sft, ok := ft.(xmptype.ScalarFieldType)
-// 		if ok == false {
-// 			log.Panicf("expected field to be scalar type: [%s] [%s] [%v]", namespace, attr.Name.Local, reflect.TypeOf(ft))
-// 		}
-
-// 		svp := sft.GetValueParser(attr.Value)
-
-// 		parsed, err = svp.Parse()
-// 		if err != nil {
-// 			if err == xmptype.ErrValueNotValid {
-// 				indexLogger.Warningf(nil, "Could not parse COMPLEX attribute [%s] [%s]: [%s]", namespace, attr.Name.Local, attr.Value)
-// 				continue
-// 			}
-
-// 			log.Panic(err)
-// 		}
-
-// 		// TODO(dustin): !! When we add support for more than one namespace, we'll be required to fully-qualify the names with the namespace prefix.
-// 		// TODO(dustin): !! We'd like to use XmlName, but that can only lookup document namespace URIs (as opposed to type namespace URIs).
-// 		info[attr.Name.Local] = parsed
-// 	}
-
-// 	return info, nil
-
-// }
-
-// func (xpi *XmpPropertyIndex) addComplexValue(name XmpPropertyName, cft xmptype.ComplexFieldType, nodeAttributes []xml.Attr) (err error) {
-// 	defer func() {
-// 		if errRaw := recover(); errRaw != nil {
-// 			err = log.Wrap(errRaw.(error))
-// 		}
-// 	}()
-
-// 	currentNodeName := name[0]
-// 	currentNodeNamePhrase := currentNodeName.String()
-
-// 	if len(name) > 1 {
-// 		subindex, found := xpi.subindices[currentNodeNamePhrase]
-
-// 		if found == false {
-// 			subindex = newXmpPropertyIndex(currentNodeName)
-// 		}
-
-// 		err := subindex.addComplexValue(name[1:], cft, nodeAttributes)
-// 		log.PanicIf(err)
-
-// 		if found == false {
-// 			xpi.subindices[currentNodeNamePhrase] = subindex
-// 		}
-// 	} else {
-// 		cln := complexLeafNode{
-// 			cft:            cft,
-// 			nodeAttributes: nodeAttributes,
-// 		}
-
-// 		if currentLeaves, found := xpi.leaves[currentNodeNamePhrase]; found == true {
-// 			xpi.leaves[currentNodeNamePhrase] = append(currentLeaves, cln)
-// 		} else {
-// 			xpi.leaves[currentNodeNamePhrase] = []ValueParser{cln}
-// 		}
-// 	}
-
-// 	return nil
-// }
-
-func (xpi *XmpPropertyIndex) addScalarValue(name XmpPropertyName, rawValue string) (err error) {
+func (xpi *XmpPropertyIndex) addScalarValue(name XmpPropertyName, parsedValue interface{}) (err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -203,7 +122,7 @@ func (xpi *XmpPropertyIndex) addScalarValue(name XmpPropertyName, rawValue strin
 			subindex = newXmpPropertyIndex(currentNodeName)
 		}
 
-		err := subindex.addScalarValue(name[1:], rawValue)
+		err := subindex.addScalarValue(name[1:], parsedValue)
 		log.PanicIf(err)
 
 		if found == false {
@@ -214,9 +133,9 @@ func (xpi *XmpPropertyIndex) addScalarValue(name XmpPropertyName, rawValue strin
 		log.PanicIf(err)
 
 		sln := scalarLeafNode{
-			namespace: namespace,
-			fieldName: currentNodeName.Local,
-			rawValue:  rawValue,
+			namespace:   namespace,
+			fieldName:   currentNodeName.Local,
+			parsedValue: parsedValue,
 		}
 
 		if currentLeaves, found := xpi.leaves[currentNodeNamePhrase]; found == true {

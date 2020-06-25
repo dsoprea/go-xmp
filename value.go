@@ -68,7 +68,7 @@ func isArrayType(namespace xmpnamespace.Namespace, fieldName string) (flag bool,
 		return false, ErrChildFieldNotFound
 	}
 
-	_, ok := ft.(xmptype.Array)
+	_, ok := ft.(xmptype.ArrayType)
 
 	return ok, nil
 }

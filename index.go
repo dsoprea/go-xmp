@@ -3,11 +3,12 @@ package xmp
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/dsoprea/go-logging"
 
-	"github.com/dsoprea/go-xmp/namespace"
+	"github.com/dsoprea/go-xmp/registry"
 	"github.com/dsoprea/go-xmp/type"
 )
 
@@ -27,14 +28,14 @@ type ValueParser interface {
 
 // XmpPropertyIndex allows for lookups and browsing of found properties.
 type XmpPropertyIndex struct {
-	nodeName   XmlName
+	nodeName   xmpregistry.XmlName
 	subindices map[string]*XmpPropertyIndex
-	leaves     map[string][]ValueParser
+	leaves     map[string][]interface{}
 }
 
-func newXmpPropertyIndex(nodeName XmlName) *XmpPropertyIndex {
+func newXmpPropertyIndex(nodeName xmpregistry.XmlName) *XmpPropertyIndex {
 	subindices := make(map[string]*XmpPropertyIndex)
-	leaves := make(map[string][]ValueParser)
+	leaves := make(map[string][]interface{})
 
 	xpi := &XmpPropertyIndex{
 		nodeName:   nodeName,
@@ -49,51 +50,17 @@ func (xpi *XmpPropertyIndex) isRoot() bool {
 	return xpi.nodeName.Local == ""
 }
 
-func (xpi *XmpPropertyIndex) name() XmlName {
+func (xpi *XmpPropertyIndex) name() xmpregistry.XmlName {
 	return xpi.nodeName
 }
 
 type scalarLeafNode struct {
-	namespace   xmpnamespace.Namespace
+	namespace   xmpregistry.Namespace
 	fieldName   string
 	parsedValue interface{}
 }
 
-func (sln scalarLeafNode) Parse() (parsed interface{}, err error) {
-	defer func() {
-		if errRaw := recover(); errRaw != nil {
-			err = log.Wrap(errRaw.(error))
-		}
-	}()
-
-	ft, found := sln.namespace.Fields[sln.fieldName]
-	if found == false {
-		fmt.Printf("ErrFieldNotFound (1): [%s]\n", sln.namespace)
-		return nil, ErrFieldNotFound
-	}
-
-	sft, ok := ft.(xmptype.ScalarFieldType)
-	if ok == false {
-		fmt.Printf("ErrFieldNotFound (2)\n")
-		return nil, ErrFieldNotFound
-	}
-
-	svp := sft.GetValueParser(sln.rawValue)
-
-	parsed, err = svp.Parse()
-	if err != nil {
-		if err == xmptype.ErrValueNotValid {
-			indexLogger.Warningf(nil, "Could not parse SCALAR attribute [%s] [%s]: [%s]", sln.namespace, sln.fieldName, sln.rawValue)
-			return nil, err
-		}
-
-		log.Panic(err)
-	}
-
-	return parsed, nil
-}
-
-func (xpi *XmpPropertyIndex) addArrayValue(name XmpPropertyName, array xmptype.ArrayValue) (err error) {
+func (xpi *XmpPropertyIndex) addArrayValue(name xmpregistry.XmpPropertyName, array xmptype.ArrayValue) (err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -105,7 +72,7 @@ func (xpi *XmpPropertyIndex) addArrayValue(name XmpPropertyName, array xmptype.A
 	return nil
 }
 
-func (xpi *XmpPropertyIndex) addScalarValue(name XmpPropertyName, parsedValue interface{}) (err error) {
+func (xpi *XmpPropertyIndex) addScalarValue(name xmpregistry.XmpPropertyName, parsedValue interface{}) (err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -129,7 +96,7 @@ func (xpi *XmpPropertyIndex) addScalarValue(name XmpPropertyName, parsedValue in
 			xpi.subindices[currentNodeNamePhrase] = subindex
 		}
 	} else {
-		namespace, err := xmpnamespace.Get(currentNodeName.Space)
+		namespace, err := xmpregistry.Get(currentNodeName.Space)
 		log.PanicIf(err)
 
 		sln := scalarLeafNode{
@@ -141,7 +108,7 @@ func (xpi *XmpPropertyIndex) addScalarValue(name XmpPropertyName, parsedValue in
 		if currentLeaves, found := xpi.leaves[currentNodeNamePhrase]; found == true {
 			xpi.leaves[currentNodeNamePhrase] = append(currentLeaves, sln)
 		} else {
-			xpi.leaves[currentNodeNamePhrase] = []ValueParser{sln}
+			xpi.leaves[currentNodeNamePhrase] = []interface{}{sln}
 		}
 	}
 
@@ -150,7 +117,7 @@ func (xpi *XmpPropertyIndex) addScalarValue(name XmpPropertyName, parsedValue in
 
 // Get searches the index for the property with the name represented by the
 // string slice.
-func (xpi *XmpPropertyIndex) Get(namePhraseSlice []string) (results []ValueParser, err error) {
+func (xpi *XmpPropertyIndex) Get(namePhraseSlice []string) (results []interface{}, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -201,20 +168,7 @@ func (xpi *XmpPropertyIndex) dump(prefix []string) {
 		fqNamePhrase := strings.Join(fqName, ".")
 
 		for _, value := range values {
-			fmt.Printf("%s\n", fqNamePhrase)
-			parsed, err := value.Parse()
-			if err != nil {
-				fmt.Printf("- Error: [%s]\n", err.Error())
-
-				if err == ErrFieldNotFound || err == xmptype.ErrValueNotValid {
-					indexLogger.Warningf(nil, "Not dumping value for [%s]: [%s]", fqNamePhrase, err.Error())
-					continue
-				}
-
-				log.Panic(err)
-			}
-
-			fmt.Printf("%s = [%s]\n", fqNamePhrase, parsed)
+			fmt.Printf("%s = [%s] [%v]\n", fqNamePhrase, reflect.TypeOf(value), value)
 		}
 	}
 }

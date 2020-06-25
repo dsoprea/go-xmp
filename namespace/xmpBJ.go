@@ -1,5 +1,9 @@
 package xmpnamespace
 
+import (
+	"github.com/dsoprea/go-xmp/registry"
+)
+
 const (
 	// XmpBJUri is the 'xmpBJ' namespace URI made a constant to support
 	// testing.
@@ -7,7 +11,7 @@ const (
 )
 
 func init() {
-	namespace := Namespace{
+	namespace := xmpregistry.Namespace{
 		Uri:             XmpBJUri,
 		PreferredPrefix: "xmpBJ",
 		// Fields:          map[string]FieldType{
@@ -16,5 +20,5 @@ func init() {
 		// },
 	}
 
-	register(namespace)
+	xmpregistry.Register(namespace)
 }

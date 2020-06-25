@@ -7,7 +7,7 @@ import (
 
 	"github.com/dsoprea/go-logging"
 
-	"github.com/dsoprea/go-xmp/namespace"
+	"github.com/dsoprea/go-xmp/registry"
 	"github.com/dsoprea/go-xmp/type"
 )
 
@@ -21,7 +21,7 @@ var (
 	ErrChildFieldNotFound = errors.New("field not found")
 )
 
-func parseValue(namespace xmpnamespace.Namespace, fieldName string, rawValue string) (parsedValue interface{}, err error) {
+func parseValue(namespace xmpregistry.Namespace, fieldName string, rawValue string) (parsedValue interface{}, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -56,7 +56,7 @@ func parseValue(namespace xmpnamespace.Namespace, fieldName string, rawValue str
 	return parsedValue, nil
 }
 
-func isArrayType(namespace xmpnamespace.Namespace, fieldName string) (flag bool, err error) {
+func isArrayType(namespace xmpregistry.Namespace, fieldName string) (flag bool, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))

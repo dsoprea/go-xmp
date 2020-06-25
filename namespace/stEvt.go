@@ -1,6 +1,7 @@
 package xmpnamespace
 
 import (
+	"github.com/dsoprea/go-xmp/registry"
 	"github.com/dsoprea/go-xmp/type"
 )
 
@@ -13,7 +14,7 @@ const (
 )
 
 func init() {
-	namespace := Namespace{
+	namespace := xmpregistry.Namespace{
 		Uri:             StEvtUri,
 		PreferredPrefix: "stEvt",
 		Fields: map[string]interface{}{
@@ -26,5 +27,5 @@ func init() {
 		},
 	}
 
-	register(namespace)
+	xmpregistry.Register(namespace)
 }

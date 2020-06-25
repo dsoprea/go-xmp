@@ -1,4 +1,4 @@
-package xmpnamespace
+package xmpregistry
 
 import (
 	"errors"
@@ -35,7 +35,7 @@ var (
 	namespaces = make(map[string]Namespace)
 )
 
-func register(namespace Namespace) {
+func Register(namespace Namespace) {
 	if _, found := namespaces[namespace.Uri]; found == true {
 		log.Panicf("namespace already registered: [%s]", namespace.Uri)
 	}

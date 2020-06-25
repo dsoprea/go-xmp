@@ -7,63 +7,11 @@ import (
 	"github.com/dsoprea/go-logging"
 
 	"github.com/dsoprea/go-xmp/namespace"
+	"github.com/dsoprea/go-xmp/registry"
 )
 
-func TestXmlName_String_Known(t *testing.T) {
-	name := XmlName{
-		Space: "http://ns.adobe.com/pdf/1.3/",
-		Local: "bb",
-	}
-
-	if name.String() != "[pdf]bb" {
-		t.Fatalf("String not correct: [%s]", name.String())
-	}
-}
-
-func TestXmlName_String_NotKnown(t *testing.T) {
-	name := XmlName{
-		Space: "aa",
-		Local: "bb",
-	}
-
-	if name.String() != "[?]bb" {
-		t.Fatalf("String not correct: [%s]", name.String())
-	}
-}
-
-func TestXmpPropertyName_Parts(t *testing.T) {
-	name := XmpPropertyName{
-		{"http://ns.adobe.com/pdf/1.3/", "aa"},
-		{"http://purl.org/dc/elements/1.1/", "bb"},
-	}
-
-	actual := name.Parts()
-
-	expected := []string{
-		"[pdf]aa",
-		"[dc]bb",
-	}
-
-	if reflect.DeepEqual(actual, expected) != true {
-		t.Fatalf("Parts not correct: %v\n", actual)
-	}
-}
-
-func TestXmpPropertyName_String(t *testing.T) {
-	name := XmpPropertyName{
-		{"http://ns.adobe.com/pdf/1.3/", "aa"},
-		{"http://purl.org/dc/elements/1.1/", "bb"},
-	}
-
-	namePhrase := name.String()
-
-	if namePhrase != "[pdf]aa.[dc]bb" {
-		t.Fatalf("String not correct: %s\n", namePhrase)
-	}
-}
-
 func TestNewXmpPropertyIndex(t *testing.T) {
-	xpi := newXmpPropertyIndex(XmlName{})
+	xpi := newXmpPropertyIndex(xmpregistry.XmlName{})
 	if xpi.subindices == nil {
 		t.Fatalf("subindices not initialized.")
 	} else if xpi.leaves == nil {
@@ -72,36 +20,36 @@ func TestNewXmpPropertyIndex(t *testing.T) {
 }
 
 func getTestIndex() *XmpPropertyIndex {
-	xpi := newXmpPropertyIndex(XmlName{})
+	xpi := newXmpPropertyIndex(xmpregistry.XmlName{})
 
 	microsoftphotoNamespaceUri := "http://ns.microsoft.com/photo/1.0/"
 
-	name := XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "title"}, {xmpnamespace.RdfUri, "Alt"}, {xmpnamespace.RdfUri, "li"}}
+	name := xmpregistry.XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "title"}, {xmpnamespace.RdfUri, "Alt"}, {xmpnamespace.RdfUri, "li"}}
 	value := "Der Goalie bin ig"
 
 	xpi.addScalarValue(name, value)
 
-	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "description"}, {xmpnamespace.RdfUri, "Alt"}, {xmpnamespace.RdfUri, "li"}}
+	name = xmpregistry.XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "description"}, {xmpnamespace.RdfUri, "Alt"}, {xmpnamespace.RdfUri, "li"}}
 	value = "Der Goalie bin ig"
 
 	xpi.addScalarValue(name, value)
 
-	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "creator"}, {xmpnamespace.RdfUri, "Seq"}, {xmpnamespace.RdfUri, "li"}}
+	name = xmpregistry.XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "creator"}, {xmpnamespace.RdfUri, "Seq"}, {xmpnamespace.RdfUri, "li"}}
 	value = "CREDIT"
 
 	xpi.addScalarValue(name, value)
 
-	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "subject"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
+	name = xmpregistry.XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {xmpnamespace.DcUri, "subject"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
 	value = "tag"
 
 	xpi.addScalarValue(name, value)
 
-	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordXMP"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
+	name = xmpregistry.XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordXMP"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
 	value = "tag"
 
 	xpi.addScalarValue(name, value)
 
-	name = XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordIPTC"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
+	name = xmpregistry.XmpPropertyName{{xmpnamespace.XUri, "xmpmeta"}, {microsoftphotoNamespaceUri, "LastKeywordIPTC"}, {xmpnamespace.RdfUri, "Bag"}, {xmpnamespace.RdfUri, "li"}}
 	value = "tag"
 
 	xpi.addScalarValue(name, value)

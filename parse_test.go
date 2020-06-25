@@ -10,6 +10,8 @@ import (
 
 	"github.com/dsoprea/go-logging"
 	"github.com/dsoprea/go-unicode-byteorder"
+
+	"github.com/dsoprea/go-xmp/registry"
 )
 
 func TestParser_Parse(t *testing.T) {
@@ -132,7 +134,7 @@ func TestParser_parseStartElementToken(t *testing.T) {
 	err := xp.parseStartElementToken(nil, xml.StartElement{Name: name})
 	log.PanicIf(err)
 
-	expected := []XmlName{XmlName(name)}
+	expected := []xmpregistry.XmlName{xmpregistry.XmlName(name)}
 
 	if reflect.DeepEqual(xp.nameStack, expected) != true {
 		t.Fatalf("Stack not correct.")
@@ -192,7 +194,7 @@ func TestParser_parseEndElementToken_pushToIndex(t *testing.T) {
 		Local: "bb",
 	}
 
-	xpi := newXmpPropertyIndex(XmlName{})
+	xpi := newXmpPropertyIndex(xmpregistry.XmlName{})
 
 	err := xp.parseStartElementToken(xpi, xml.StartElement{Name: name})
 	log.PanicIf(err)

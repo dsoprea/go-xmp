@@ -1,4 +1,4 @@
-package xmp
+package xmpregistry
 
 import (
 	"fmt"
@@ -7,12 +7,10 @@ import (
 	"encoding/xml"
 
 	"github.com/dsoprea/go-logging"
-
-	"github.com/dsoprea/go-xmp/namespace"
 )
 
 var (
-	typeLogger = log.NewLogger("xmp.type")
+	typeLogger = log.NewLogger("xmpregistry.type")
 )
 
 // XmlName is a localized version of xml.Name with a String() method attached.
@@ -21,7 +19,7 @@ type XmlName xml.Name
 func (xn XmlName) String() string {
 	var prefix string
 
-	ns, err := xmpnamespace.Get(xn.Space)
+	ns, err := Get(xn.Space)
 	if err != nil {
 		// They should notify us of the unknown namespace so that we
 		// can register it and they can handle it properly.

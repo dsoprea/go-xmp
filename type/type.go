@@ -3,9 +3,9 @@ package xmptype
 import (
 	"errors"
 
-	"encoding/xml"
-
 	"github.com/dsoprea/go-logging"
+
+	"github.com/dsoprea/go-xmp/registry"
 )
 
 var (
@@ -38,91 +38,23 @@ type ScalarValueParser interface {
 	Parse() (interface{}, error)
 }
 
-// // Namespace describes an XML namespace.
-// type Namespace struct {
-// 	// Uri is the URI of a namespace (it should be regarded as a string only;
-// 	// XML namespaces are not necssarily valid Internet resources).
-// 	Uri string
-
-// 	// PreferredPrefix is the preferred naming-prefix prescribed by the
-// 	// governing standard of this namespace.
-// 	PreferredPrefix string
-// }
-
-// func (namespace Namespace) String() string {
-// 	return fmt.Sprintf("Namespace<URI=[%s] PREFIX=[%s]>", namespace.Uri, namespace.PreferredPrefix)
-// }
-
-// // ComplexFieldType represents a complex value (comprised of child nodes).
-// type ComplexFieldType interface {
-// 	// ChildFieldType returns the field-type for the immediate child with the
-// 	// given name.
-// 	ChildFieldType(fieldName string) (ft interface{}, err error)
-
-// 	// Namespace returns the namespace info the node/children of this type.
-// 	Namespace() Namespace
-// }
-
-// var (
-// 	complexTypes = make(map[string]ComplexFieldType)
-// )
-
-// func registerComplex(cft ComplexFieldType) {
-// 	namespace := cft.Namespace()
-
-// 	if _, found := complexTypes[namespace.Uri]; found == true {
-// 		log.Panicf("namespace already registered: [%s]", namespace.Uri)
-// 	}
-
-// 	complexTypes[namespace.Uri] = cft
-// }
-
-// // GetComplex returns the ComplexFieldType struct associated with the given
-// // namespace.
-// func GetComplex(namespaceUri string) (cft ComplexFieldType, err error) {
-// 	defer func() {
-// 		if errRaw := recover(); errRaw != nil {
-// 			err = log.Wrap(errRaw.(error))
-// 		}
-// 	}()
-
-// 	cft, found := complexTypes[namespaceUri]
-
-// 	if found == false {
-// 		return nil, ErrComplexTypeNotFound
-// 	}
-
-// 	return cft, nil
-// }
-
-// // MustGetComplex returns the ComplexFieldType struct associated with the given
-// // namespace. It panics if not known.
-// func MustGetComplex(namespaceUri string) (cft ComplexFieldType) {
-// 	cft, err := GetComplex(namespaceUri)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-
-// 	return cft
-// }
-
-// TODO(dustin): !! Finish implementing the array-handling logic below.
+// Array types
 
 type ArrayValue interface {
-	FullName() []xml.Name
+	FullName() xmpregistry.XmpPropertyName
 	Count() int
 }
 
 type ArrayType interface {
-	New(fullName []xml.Name, collected []interface{}) ArrayValue
+	New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue
 }
 
 type BaseArrayValue struct {
-	fullName  []xml.Name
+	fullName  xmpregistry.XmpPropertyName
 	collected []interface{}
 }
 
-func (bav BaseArrayValue) FullName() []xml.Name {
+func (bav BaseArrayValue) FullName() xmpregistry.XmpPropertyName {
 	return bav.fullName
 }
 
@@ -141,7 +73,7 @@ type OrderedArrayValue struct {
 type OrderedArrayType struct {
 }
 
-func (oat OrderedArrayType) New(fullName []xml.Name, collected []interface{}) ArrayValue {
+func (oat OrderedArrayType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	return OrderedArrayValue{
 		BaseArrayValue: BaseArrayValue{
 			fullName:  fullName,
@@ -173,7 +105,7 @@ type UnorderedArrayValue struct {
 type UnorderedArrayType struct {
 }
 
-func (uat UnorderedArrayType) New(fullName []xml.Name, collected []interface{}) ArrayValue {
+func (uat UnorderedArrayType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	return UnorderedArrayValue{
 		BaseArrayValue: BaseArrayValue{
 			fullName:  fullName,
@@ -192,7 +124,7 @@ type AlternativeArrayType struct {
 	BaseArrayValue
 }
 
-func (aat AlternativeArrayType) New(fullName []xml.Name, collected []interface{}) ArrayValue {
+func (aat AlternativeArrayType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	return AlternativeArrayType{
 		BaseArrayValue: BaseArrayValue{
 			fullName:  fullName,

@@ -68,3 +68,13 @@ func (xpn XmpPropertyName) String() string {
 	parts := xpn.Parts()
 	return strings.Join(parts, ".")
 }
+
+func InlineAttributes(attributes map[xml.Name]interface{}) string {
+	parts := make([]string, 0, len(attributes))
+	for name, parsedValue := range attributes {
+		xn := XmlName(name)
+		parts = append(parts, fmt.Sprintf("%s=[%v]", xn, parsedValue))
+	}
+
+	return strings.Join(parts, " ")
+}

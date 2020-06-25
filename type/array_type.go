@@ -3,7 +3,6 @@ package xmptype
 import (
 	"fmt"
 	"reflect"
-	"strings"
 
 	"encoding/xml"
 
@@ -51,13 +50,7 @@ type ArrayItem struct {
 }
 
 func (ai ArrayItem) InlineAttributes() string {
-	parts := make([]string, 0, len(ai.Attributes))
-	for name, parsedValue := range ai.Attributes {
-		xn := xmpregistry.XmlName(name)
-		parts = append(parts, fmt.Sprintf("%s=[%v]", xn, parsedValue))
-	}
-
-	return strings.Join(parts, " ")
+	return xmpregistry.InlineAttributes(ai.Attributes)
 }
 
 type ArrayValue interface {

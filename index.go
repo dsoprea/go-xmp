@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"encoding/xml"
+
 	"github.com/dsoprea/go-logging"
 
 	"github.com/dsoprea/go-xmp/registry"
@@ -128,6 +130,20 @@ func (xpi *XmpPropertyIndex) addScalarValue(name xmpregistry.XmpPropertyName, pa
 			xpi.leaves[currentNodeNamePhrase] = []interface{}{sln}
 		}
 	}
+
+	return nil
+}
+
+func (xpi *XmpPropertyIndex) addComplexNode(xpn xmpregistry.XmpPropertyName, attributes map[xml.Name]interface{}) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	fmt.Printf("addComplexNode: %s: %s\n", xpn, xmpregistry.InlineAttributes(attributes))
+
+	// TODO(dustin): !! Finish
 
 	return nil
 }

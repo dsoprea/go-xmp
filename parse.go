@@ -197,23 +197,9 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 	isArray, err := xp.isArrayNode(t.Name)
 	log.PanicIf(err)
 
-	// Try to lookup and parse attributes.
-
-	attributes, err := xmptype.ParseAttributes(t)
-	log.PanicIf(err)
-
-	// TODO(dustin): !! Not yet doing anything with this.
-	attributes = attributes
-
-	// TODO(dustin): !! Build complex-type with xml.Node and attributes above.
-
 	if isArray == true {
-		// We've encountered a new array.
-
-		// xpn := xmpregistry.XmpPropertyName(xp.nameStack)
-		// fmt.Printf("Starting array: %s\n", xpn)
-
-		// TODO(dustin): !! Create array struct here and embed the complex-type struct from above.
+		// We've encountered a new array. None of the known RDF array types has
+		// attributes on the start-tag, so we won't gather them.
 
 		xp.unfinishedArrayLayers = append(xp.unfinishedArrayLayers, make([]interface{}, 0))
 	} else if len(xp.unfinishedArrayLayers) > 0 {
@@ -221,18 +207,24 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 		// one. Append the current node to it. Since any attributes may be
 		// encapsulated, we defer to our array-management to extract them.
 
-		// xpn := xmpregistry.XmpPropertyName(xp.nameStack)
-		// fmt.Printf("Collecting within array: %s\n", xpn)
-
-		// TODO(dustin): !! Wrap token with complex-type struct from above.
+		// Any attributes will be extracted by our array management.
 
 		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
 		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], t)
 	} else {
 		// This is a simple leaf node that is not an array nor underneath an
-		// array.
+		// array. If it has tangible attributes, we'll represent it as a
+		// complex-node type and push to the index.
 
-		// TODO(dustin): !! Push complex-type to index.
+		attributes, err := xmptype.ParseAttributes(t)
+		log.PanicIf(err)
+
+		if len(attributes) > 0 {
+			xpn := xmpregistry.XmpPropertyName(xp.nameStack)
+
+			err := xpi.addComplexNode(xpn, attributes)
+			log.PanicIf(err)
+		}
 	}
 
 	return nil

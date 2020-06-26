@@ -4,10 +4,19 @@ import (
 	"reflect"
 	"testing"
 
+	"encoding/xml"
+
 	"github.com/dsoprea/go-logging"
 
 	"github.com/dsoprea/go-xmp/namespace"
 	"github.com/dsoprea/go-xmp/registry"
+)
+
+var (
+	rdfLiName = xml.Name{
+		Space: xmpnamespace.RdfUri,
+		Local: "li",
+	}
 )
 
 func TestNewXmpPropertyIndex(t *testing.T) {
@@ -65,6 +74,13 @@ func TestXmpPropertyIndex_Count(t *testing.T) {
 	}
 }
 
+func constructLiItem(value string) (sln ScalarLeafNode) {
+	sln.Name = rdfLiName
+	sln.ParsedValue = value
+
+	return sln
+}
+
 func checkFirstLoadedProperty(t *testing.T, xpi *XmpPropertyIndex) {
 	if len(xpi.subindices) != 1 {
 		t.Fatalf("Subindices at level 0 not correct.")
@@ -104,14 +120,21 @@ func checkFirstLoadedProperty(t *testing.T, xpi *XmpPropertyIndex) {
 		t.Fatalf("Final leaves not correct: %v", values)
 	}
 
-	expected := []interface{}{"Der Goalie bin ig"}
+	actual := values[0].(ScalarLeafNode)
 
-	if reflect.DeepEqual(values, expected) != true {
-		t.Fatalf("Stored leaf values not correct: %v", values)
+	expected := constructLiItem("Der Goalie bin ig")
+
+	if reflect.DeepEqual(actual, expected) != true {
+		t.Fatalf("Stored leaf values not correct:\n  Actual: [%s] [%v]\nExpected: [%s] [%v]", reflect.TypeOf(actual), actual, reflect.TypeOf(expected), expected)
 	}
 }
 
 func TestXmpPropertyIndex_add(t *testing.T) {
+
+	// We process arrays differently than this test implies, though the purpose
+	// of this test is to inject several scalars and then retrieve them. Pay not
+	// mind to the actual values being pushed.
+
 	xpi := getTestIndex()
 
 	// Make sure the first one is loaded correctly in the index hierarchy.
@@ -127,7 +150,8 @@ func TestXmpPropertyIndex_add(t *testing.T) {
 	actual, err := xpi.Get([]string{"[x]xmpmeta", "[dc]title", "[rdf]Alt", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected := []interface{}{"Der Goalie bin ig"}
+	expectedValue := constructLiItem("Der Goalie bin ig")
+	expected := []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (1).")
@@ -138,7 +162,8 @@ func TestXmpPropertyIndex_add(t *testing.T) {
 	actual, err = xpi.Get([]string{"[x]xmpmeta", "[dc]description", "[rdf]Alt", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected = []interface{}{"Der Goalie bin ig"}
+	expectedValue = constructLiItem("Der Goalie bin ig")
+	expected = []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (2).")
@@ -149,7 +174,8 @@ func TestXmpPropertyIndex_add(t *testing.T) {
 	actual, err = xpi.Get([]string{"[x]xmpmeta", "[dc]creator", "[rdf]Seq", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected = []interface{}{"CREDIT"}
+	expectedValue = constructLiItem("CREDIT")
+	expected = []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (3).")
@@ -160,7 +186,8 @@ func TestXmpPropertyIndex_add(t *testing.T) {
 	actual, err = xpi.Get([]string{"[x]xmpmeta", "[dc]subject", "[rdf]Bag", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected = []interface{}{"tag"}
+	expectedValue = constructLiItem("tag")
+	expected = []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (4).")
@@ -171,7 +198,8 @@ func TestXmpPropertyIndex_add(t *testing.T) {
 	actual, err = xpi.Get([]string{"[x]xmpmeta", "[MicrosoftPhoto]LastKeywordXMP", "[rdf]Bag", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected = []interface{}{"tag"}
+	expectedValue = constructLiItem("tag")
+	expected = []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (5).")
@@ -182,7 +210,8 @@ func TestXmpPropertyIndex_add(t *testing.T) {
 	actual, err = xpi.Get([]string{"[x]xmpmeta", "[MicrosoftPhoto]LastKeywordIPTC", "[rdf]Bag", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected = []interface{}{"tag"}
+	expectedValue = constructLiItem("tag")
+	expected = []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (6).")
@@ -201,7 +230,8 @@ func TestXmpPropertyIndex_Get(t *testing.T) {
 	actual, err := xpi.Get([]string{"[x]xmpmeta", "[dc]title", "[rdf]Alt", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected := []interface{}{"Der Goalie bin ig"}
+	expectedValue := constructLiItem("Der Goalie bin ig")
+	expected := []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (1).")
@@ -212,7 +242,8 @@ func TestXmpPropertyIndex_Get(t *testing.T) {
 	actual, err = xpi.Get([]string{"[x]xmpmeta", "[dc]description", "[rdf]Alt", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected = []interface{}{"Der Goalie bin ig"}
+	expectedValue = constructLiItem("Der Goalie bin ig")
+	expected = []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (2).")
@@ -223,7 +254,8 @@ func TestXmpPropertyIndex_Get(t *testing.T) {
 	actual, err = xpi.Get([]string{"[x]xmpmeta", "[dc]creator", "[rdf]Seq", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected = []interface{}{"CREDIT"}
+	expectedValue = constructLiItem("CREDIT")
+	expected = []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (3).")
@@ -234,7 +266,8 @@ func TestXmpPropertyIndex_Get(t *testing.T) {
 	actual, err = xpi.Get([]string{"[x]xmpmeta", "[dc]subject", "[rdf]Bag", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected = []interface{}{"tag"}
+	expectedValue = constructLiItem("tag")
+	expected = []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (4).")
@@ -245,7 +278,8 @@ func TestXmpPropertyIndex_Get(t *testing.T) {
 	actual, err = xpi.Get([]string{"[x]xmpmeta", "[MicrosoftPhoto]LastKeywordXMP", "[rdf]Bag", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected = []interface{}{"tag"}
+	expectedValue = constructLiItem("tag")
+	expected = []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (5).")
@@ -256,7 +290,8 @@ func TestXmpPropertyIndex_Get(t *testing.T) {
 	actual, err = xpi.Get([]string{"[x]xmpmeta", "[MicrosoftPhoto]LastKeywordIPTC", "[rdf]Bag", "[rdf]li"})
 	log.PanicIf(err)
 
-	expected = []interface{}{"tag"}
+	expectedValue = constructLiItem("tag")
+	expected = []interface{}{expectedValue}
 
 	if reflect.DeepEqual(actual, expected) != true {
 		t.Fatalf("Result not correct (6).")

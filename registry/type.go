@@ -17,6 +17,10 @@ var (
 	cachedPrefixes = make(map[string]string)
 )
 
+func ClearCachedPrefixes() {
+	cachedPrefixes = make(map[string]string)
+}
+
 // XmlName is a localized version of xml.Name with a String() method attached.
 type XmlName xml.Name
 

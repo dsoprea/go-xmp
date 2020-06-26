@@ -59,6 +59,7 @@ func IsArrayType(namespace xmpregistry.Namespace, fieldName string) (flag bool, 
 	}()
 
 	ft, found := namespace.Fields[fieldName]
+
 	if found == false {
 		return false, ErrChildFieldNotFound
 	}

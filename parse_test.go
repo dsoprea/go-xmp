@@ -2,7 +2,6 @@ package xmp
 
 import (
 	"bytes"
-	"fmt"
 	"reflect"
 	"testing"
 
@@ -11,10 +10,18 @@ import (
 	"github.com/dsoprea/go-logging"
 	"github.com/dsoprea/go-unicode-byteorder"
 
+	"github.com/dsoprea/go-xmp/namespace"
 	"github.com/dsoprea/go-xmp/registry"
 )
 
-func TestParser_Parse(t *testing.T) {
+var (
+	xmpLabelName = xml.Name{
+		Space: xmpnamespace.XmpUri,
+		Local: "Label",
+	}
+)
+
+func TestParser_Parse_Complex(t *testing.T) {
 	data := GetTestData()
 	b := bytes.NewBuffer(data)
 	xp := NewParser(b)
@@ -22,46 +29,25 @@ func TestParser_Parse(t *testing.T) {
 	xpi, err := xp.Parse()
 	log.PanicIf(err)
 
-	fmt.Printf("Dumping\n")
-
-	xpi.Dump()
-
-	return
-
-	actual, err := xpi.Get([]string{"[x]xmpmeta", "[claro]Logging", "[rdf]Seq", "[rdf]li"})
+	results, err := xpi.Get([]string{"[x]xmpmeta", "[xmpMM]DerivedFrom"})
 	log.PanicIf(err)
 
-	expected := []interface{}{
-		"20141001 11:47:23 Channel 'WebRGB_Crop' processing file: 36253.jpg (36253.xml)",
-		"20141001 11:47:23 IMGINFO size 6.103851 MPixel 150 DPI RGB, used assumed profile sRGB IEC61966-2.1",
-		"20141001 11:47:24 WARNING invalid CROP parameter: Height limited:2969.814464569092>2953",
-		"20141001 11:47:24 CROP with: xCropStart=27 yCropStart=25 width=2022 height=2927",
-		"20141001 11:47:25 ADJUST : resized with factor 0.15921041 (dpi set to 300.0):  width =322  height=466  size=150052 pixels",
-		"20141001 11:47:25 ADJUST : set 300.0 DPI",
-		"20141001 11:47:26 IMPROVE Sharpening 100% radius:0.7849731545638932 threshold: 0",
-		"20141001 11:47:26 CONVERT EMBED profile  sRGB.icc (RelativeColorimetric BPC rendering intent), Out Of Gamut in conversion: 0%",
+	if len(results) != 1 {
+		t.Fatalf("Expected one result: (%d)", len(results))
 	}
 
-	if reflect.DeepEqual(actual, expected) != true {
-		fmt.Printf("Actual:\n")
-		fmt.Printf("\n")
+	cln, ok := results[0].(ComplexLeafNode)
+	if ok != true {
+		t.Fatalf("Result is not a complex leaf node.")
+	}
 
-		for _, line := range actual {
-			fmt.Printf("[%s]\n", line)
-		}
+	value, found := cln.Get(xmpnamespace.StRefUri, "documentID")
+	if found != true {
+		t.Fatalf("Could not find attribute in result.")
+	}
 
-		fmt.Printf("\n")
-
-		fmt.Printf("Expected:\n")
-		fmt.Printf("\n")
-
-		for _, line := range expected {
-			fmt.Printf("[%s]\n", line)
-		}
-
-		fmt.Printf("\n")
-
-		t.Fatalf("Values not correct.")
+	if value != "xmp.did:146E0D5C4520681181ACE0A302384436" {
+		t.Fatalf("Value is not correct: [%s]", value)
 	}
 }
 
@@ -190,8 +176,8 @@ func TestParser_parseEndElementToken_pushToIndex(t *testing.T) {
 	xp.rdfDescriptionIsOpen = true
 
 	name := xml.Name{
-		Space: "aa",
-		Local: "bb",
+		Space: xmpnamespace.XmpUri,
+		Local: "Label",
 	}
 
 	xpi := newXmpPropertyIndex(xmpregistry.XmlName{})
@@ -212,14 +198,19 @@ func TestParser_parseEndElementToken_pushToIndex(t *testing.T) {
 	log.PanicIf(err)
 
 	if xpi.Count() != 1 {
-		t.Fatalf("XPI should have one item after close.")
+		t.Fatalf("XPI should have one item after close: (%d)", xpi.Count())
 	}
 
-	results, err := xpi.Get([]string{"[?]bb"})
+	results, err := xpi.Get([]string{"[xmp]Label"})
 	log.PanicIf(err)
 
+	sln := ScalarLeafNode{
+		Name:        xmpLabelName,
+		ParsedValue: "some data",
+	}
+
 	expected := []interface{}{
-		"some data",
+		sln,
 	}
 
 	if reflect.DeepEqual(results, expected) != true {

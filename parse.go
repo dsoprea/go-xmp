@@ -143,7 +143,7 @@ func (xp *Parser) isArrayNode(name xml.Name) (flag bool, err error) {
 		}
 	}
 
-	return true, nil
+	return flag, nil
 }
 
 func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartElement) (err error) {

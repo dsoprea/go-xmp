@@ -21,7 +21,7 @@ var (
 var (
 	// ErrFieldNotFound represents an error for a get operation that produced
 	// no results.
-	ErrFieldNotFound = errors.New("field not found in namespace")
+	ErrFieldNotFound = errors.New("node not found in document")
 )
 
 type ValueParser interface {
@@ -104,8 +104,7 @@ func (xpi *XmpPropertyIndex) addArrayValue(xpn xmpregistry.XmpPropertyName, arra
 }
 
 type ScalarLeafNode struct {
-	Namespace   xmpregistry.Namespace
-	FieldName   string
+	Name        xml.Name
 	ParsedValue interface{}
 }
 
@@ -118,12 +117,8 @@ func (xpi *XmpPropertyIndex) addScalarValue(xpn xmpregistry.XmpPropertyName, par
 
 	currentNodeName := xpn[len(xpn)-1]
 
-	namespace, err := xmpregistry.Get(currentNodeName.Space)
-	log.PanicIf(err)
-
 	sln := ScalarLeafNode{
-		Namespace:   namespace,
-		FieldName:   currentNodeName.Local,
+		Name:        xml.Name(currentNodeName),
 		ParsedValue: parsedValue,
 	}
 
@@ -134,6 +129,17 @@ func (xpi *XmpPropertyIndex) addScalarValue(xpn xmpregistry.XmpPropertyName, par
 }
 
 type ComplexLeafNode map[xml.Name]interface{}
+
+func (cln ComplexLeafNode) Get(uri string, local string) (value interface{}, found bool) {
+	name := xml.Name{
+		Space: uri,
+		Local: local,
+	}
+
+	value, found = cln[name]
+
+	return value, found
+}
 
 func (xpi *XmpPropertyIndex) addComplexValue(xpn xmpregistry.XmpPropertyName, attributes map[xml.Name]interface{}) (err error) {
 	defer func() {
@@ -216,7 +222,9 @@ func (xpi *XmpPropertyIndex) dump(prefix []string) {
 				fmt.Printf("%s:\n\n   SCALAR\n", fqNamePhrase)
 				fmt.Printf("\n")
 
-				fmt.Printf("  [%s]%s = [%s] [%v]\n", sln.Namespace.PreferredPrefix, sln.FieldName, reflect.TypeOf(sln.ParsedValue), sln.ParsedValue)
+				namePhrase := xmpregistry.XmlName(sln.Name).String()
+
+				fmt.Printf("  %s = [%s] [%v]\n", namePhrase, reflect.TypeOf(sln.ParsedValue), sln.ParsedValue)
 
 				fmt.Printf("\n")
 			} else if cln, ok := value.(ComplexLeafNode); ok == true {

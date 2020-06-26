@@ -2,6 +2,7 @@ package xmpregistry
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"encoding/xml"
@@ -14,9 +15,12 @@ var (
 )
 
 var (
+	// TODO(dustin): This has questionable savings. It just swaps one lookup with another with maybe only a constant savings.
 	cachedPrefixes = make(map[string]string)
 )
 
+// ClearCachedPrefixes clears the namespace-prefix cache that is loaded from
+// Get().
 func ClearCachedPrefixes() {
 	cachedPrefixes = make(map[string]string)
 }
@@ -24,6 +28,8 @@ func ClearCachedPrefixes() {
 // XmlName is a localized version of xml.Name with a String() method attached.
 type XmlName xml.Name
 
+// Prefix returns the preferred-prefix for the given namespace if registered,
+// else "?".
 func (xn XmlName) Prefix() string {
 	prefix, found := cachedPrefixes[xn.Space]
 	if found == true {
@@ -47,6 +53,7 @@ func (xn XmlName) Prefix() string {
 	return prefix
 }
 
+// String returns a string representation of the XML name.
 func (xn XmlName) String() string {
 	prefix := xn.Prefix()
 
@@ -73,9 +80,28 @@ func (xpn XmpPropertyName) String() string {
 	return strings.Join(parts, ".")
 }
 
+// InlineAttributes returns all attributes expressed in a single line (for
+// logging/dumping values). They are sorted alphabetically to support testing.
 func InlineAttributes(attributes map[xml.Name]interface{}) string {
+	keys := make(sort.StringSlice, len(attributes))
+	mapping := make(map[string]xml.Name)
+
+	i := 0
+	for k, _ := range attributes {
+		phrase := XmlName(k).String()
+		keys[i] = phrase
+		mapping[phrase] = k
+
+		i++
+	}
+
+	keys.Sort()
+
 	parts := make([]string, 0, len(attributes))
-	for name, parsedValue := range attributes {
+	for _, namePhrase := range keys {
+		name := mapping[namePhrase]
+		parsedValue := attributes[name]
+
 		xn := XmlName(name)
 		parts = append(parts, fmt.Sprintf("%s=[%v]", xn, parsedValue))
 	}

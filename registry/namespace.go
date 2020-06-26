@@ -18,6 +18,12 @@ var (
 )
 
 var (
+	// namespaces contains all of the namespace registrations.
+	namespaces = make(map[string]Namespace)
+
+	// unknownNamespaces indicates which namespaces have been looked up that we
+	// don't have registrations for. This allows us to log warnings once and
+	// only once.
 	unknownNamespaces = make(map[string]struct{})
 )
 
@@ -35,14 +41,12 @@ type Namespace struct {
 	Fields map[string]interface{}
 }
 
+// String returns a string representation of the namespace.
 func (namespace Namespace) String() string {
 	return fmt.Sprintf("Namespace<URI=[%s] PREFIX=[%s]>", namespace.Uri, namespace.PreferredPrefix)
 }
 
-var (
-	namespaces = make(map[string]Namespace)
-)
-
+// Register registers a namespace for access during parsing and indexing.
 func Register(namespace Namespace) {
 	if _, found := namespaces[namespace.Uri]; found == true {
 		log.Panicf("namespace already registered: [%s]", namespace.Uri)

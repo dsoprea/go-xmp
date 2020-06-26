@@ -55,6 +55,12 @@ func Register(namespace Namespace) {
 	namespaces[namespace.Uri] = namespace
 }
 
+// Clear removes all namespace registrations. Supports testing.
+func Clear() {
+	namespaces = make(map[string]Namespace)
+	unknownNamespaces = make(map[string]struct{})
+}
+
 // Get returns the namespace registration for the given URI. Since namespaces
 // URIs are strictly defined, no normalization is required.
 func Get(uri string) (namespace Namespace, err error) {

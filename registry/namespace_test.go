@@ -47,6 +47,34 @@ func TestRegister_Hit(t *testing.T) {
 	}
 }
 
+func TestClear(t *testing.T) {
+	originalNamespaces := namespaces
+	namespaces = make(map[string]Namespace)
+
+	defer func() {
+		namespaces = originalNamespaces
+	}()
+
+	uri := "http://some/uri/TestRegister"
+
+	namespace := Namespace{
+		Uri:             uri,
+		PreferredPrefix: "TestRegister",
+	}
+
+	Register(namespace)
+
+	if len(namespaces) != 1 {
+		t.Fatalf("Registrations count not correct: (%d)", len(namespaces))
+	}
+
+	Clear()
+
+	if len(namespaces) != 0 {
+		t.Fatalf("Registrations not cleared.")
+	}
+}
+
 func TestRegister_Get_Hit(t *testing.T) {
 	originalNamespaces := namespaces
 	namespaces = make(map[string]Namespace)

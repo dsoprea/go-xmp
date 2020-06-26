@@ -64,7 +64,7 @@ type ArrayStringValueLister interface {
 	Items() (items []string, err error)
 }
 
-type ArrayType interface {
+type ArrayFieldType interface {
 	New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue
 }
 
@@ -257,10 +257,10 @@ func (oav OrderedArrayValue) Items() (items []ArrayItem, err error) {
 	return items, nil
 }
 
-type OrderedArrayType struct {
+type OrderedArrayFieldType struct {
 }
 
-func (oat OrderedArrayType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
+func (oat OrderedArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 
 	return OrderedArrayValue{
@@ -268,12 +268,12 @@ func (oat OrderedArrayType) New(fullName xmpregistry.XmpPropertyName, collected 
 	}
 }
 
-type OrderedTextArrayType struct {
-	OrderedArrayType
+type OrderedTextArrayFieldType struct {
+	OrderedArrayFieldType
 }
 
-type OrderedUriArrayType struct {
-	OrderedArrayType
+type OrderedUriArrayFieldType struct {
+	OrderedArrayFieldType
 }
 
 type OrderedResourceEventArrayValue struct {
@@ -302,10 +302,10 @@ func (oreav OrderedResourceEventArrayValue) Items() (items []string, err error) 
 	return items, nil
 }
 
-type OrderedResourceEventArrayType struct {
+type OrderedResourceEventArrayFieldType struct {
 }
 
-func (oreat OrderedResourceEventArrayType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
+func (oreat OrderedResourceEventArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 	oav := newOrderedArrayValue(bav)
 
@@ -348,17 +348,17 @@ func (uav UnorderedArrayValue) Items() (items []ArrayItem, err error) {
 	return items, nil
 }
 
-type UnorderedArrayType struct {
+type UnorderedArrayFieldType struct {
 }
 
-func (uat UnorderedArrayType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
+func (uat UnorderedArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 
 	return newUnorderedArrayValue(bav)
 }
 
-type UnorderedTextArrayType struct {
-	UnorderedArrayType
+type UnorderedTextArrayFieldType struct {
+	UnorderedArrayFieldType
 }
 
 type UnorderedAncestorArrayValue struct {
@@ -386,11 +386,11 @@ func (uaav UnorderedAncestorArrayValue) Items() (items []string, err error) {
 	return items, nil
 }
 
-type UnorderedAncestorArrayType struct {
-	UnorderedArrayType
+type UnorderedAncestorArrayFieldType struct {
+	UnorderedArrayFieldType
 }
 
-func (uaat UnorderedAncestorArrayType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
+func (uaat UnorderedAncestorArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 
 	return UnorderedAncestorArrayValue{
@@ -430,10 +430,10 @@ func (aav AlternativeArrayValue) Items() (items []ArrayItem, err error) {
 	return items, nil
 }
 
-type AlternativeArrayType struct {
+type AlternativeArrayFieldType struct {
 }
 
-func (aat AlternativeArrayType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
+func (aat AlternativeArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 
 	return AlternativeArrayValue{
@@ -463,10 +463,10 @@ func (laav LanguageAlternativeArrayValue) Items() (items []string, err error) {
 	return items, nil
 }
 
-type LanguageAlternativeArrayType struct {
+type LanguageAlternativeArrayFieldType struct {
 }
 
-func (laat LanguageAlternativeArrayType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
+func (laat LanguageAlternativeArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 	aav := newAlternativeArrayValue(bav)
 

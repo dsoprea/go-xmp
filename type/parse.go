@@ -64,7 +64,7 @@ func IsArrayType(namespace xmpregistry.Namespace, fieldName string) (flag bool, 
 		return false, ErrChildFieldNotFound
 	}
 
-	_, ok := ft.(ArrayType)
+	_, ok := ft.(ArrayFieldType)
 
 	return ok, nil
 }

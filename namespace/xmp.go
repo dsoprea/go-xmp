@@ -18,7 +18,7 @@ func init() {
 			"BaseURL":      xmptype.UrlFieldType{},
 			"CreateDate":   xmptype.DateFieldType{},
 			"CreatorTool":  xmptype.AgentNameFieldType{},
-			"Identifier":   xmptype.UnorderedTextArrayType{},
+			"Identifier":   xmptype.UnorderedTextArrayFieldType{},
 			"Label":        xmptype.TextFieldType{},
 			"MetadataDate": xmptype.DateFieldType{},
 			"ModifyDate":   xmptype.DateFieldType{},

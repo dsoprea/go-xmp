@@ -27,7 +27,7 @@ func init() {
 			"Country":           xmptype.TextFieldType{},
 			"Credit":            xmptype.TextFieldType{},
 			"DateCreated":       xmptype.DateFieldType{},
-			"DocumentAncestors": xmptype.UnorderedAncestorArrayType{},
+			"DocumentAncestors": xmptype.UnorderedAncestorArrayFieldType{},
 			"Headline":          xmptype.TextFieldType{},
 			"History":           xmptype.TextFieldType{},
 			"ICCProfile":        xmptype.TextFieldType{},
@@ -35,7 +35,7 @@ func init() {
 			"Source":            xmptype.TextFieldType{},
 			"State":             xmptype.TextFieldType{},
 
-			"SupplementalCategories": xmptype.UnorderedTextArrayType{},
+			"SupplementalCategories": xmptype.UnorderedTextArrayFieldType{},
 
 			// TODO(dustin): We need to finish our implementation of Array
 			// "TextLayers":

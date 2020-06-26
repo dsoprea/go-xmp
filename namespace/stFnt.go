@@ -19,7 +19,7 @@ func init() {
 		Uri:             StFntUri,
 		PreferredPrefix: "stFnt",
 		Fields: map[string]interface{}{
-			"childFontFiles": xmptype.OrderedTextArrayType{},
+			"childFontFiles": xmptype.OrderedTextArrayFieldType{},
 			"composite":      xmptype.BooleanFieldType{},
 			"fontFace":       xmptype.TextFieldType{},
 			"fontFamily":     xmptype.TextFieldType{},

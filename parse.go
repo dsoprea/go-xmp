@@ -280,11 +280,11 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 
 	// If the current node is an array-type, get the struct that represents it.
 
-	var arrayType xmptype.ArrayType
+	var arrayType xmptype.ArrayFieldType
 
 	if nodeNamespace, err := xmpregistry.Get(nodeNamespaceUri); err == nil {
 		if ft, found := nodeNamespace.Fields[nodeLocalName]; found == true {
-			if t, ok := ft.(xmptype.ArrayType); ok == true {
+			if t, ok := ft.(xmptype.ArrayFieldType); ok == true {
 				arrayType = t
 			}
 		}

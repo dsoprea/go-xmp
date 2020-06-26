@@ -16,7 +16,7 @@ func init() {
 		Uri:             StRefUri,
 		PreferredPrefix: "stRef",
 		Fields: map[string]interface{}{
-			"alternatePaths":  xmptype.OrderedUriArrayType{},
+			"alternatePaths":  xmptype.OrderedUriArrayFieldType{},
 			"documentID":      xmptype.UriFieldType{},
 			"filePath":        xmptype.UriFieldType{},
 			"fromPart":        xmptype.PartFieldType{},

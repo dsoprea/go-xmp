@@ -1,9 +1,11 @@
 package xmptype
 
+// TextFieldValue parses the encapsulated value to a string.
 type TextFieldValue struct {
 	raw string
 }
 
+// Parse parses the raw value to a string value on-the-fly.
 func (tfv TextFieldValue) Parse() (parsed interface{}, err error) {
 	return tfv.raw, nil
 }

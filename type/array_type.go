@@ -16,29 +16,29 @@ var (
 )
 
 const (
-	// rdfUri is the URI for the "rdf" namespace. We can't use the same value
+	// RdfUri is the URI for the "rdf" namespace. We can't use the same value
 	// from xmpnamespace because xmptype can't import from it.
-	rdfUri = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	RdfUri = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 )
 
 var (
 	rdfSeqTag = xml.Name{
-		Space: rdfUri,
+		Space: RdfUri,
 		Local: "Seq",
 	}
 
 	rdfBagTag = xml.Name{
-		Space: rdfUri,
+		Space: RdfUri,
 		Local: "Bag",
 	}
 
 	rdfAltTag = xml.Name{
-		Space: rdfUri,
+		Space: RdfUri,
 		Local: "Alt",
 	}
 
 	rdfLiTag = xml.Name{
-		Space: rdfUri,
+		Space: RdfUri,
 		Local: "li",
 	}
 )

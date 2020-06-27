@@ -4,11 +4,12 @@ import (
 	"encoding/xml"
 
 	"github.com/dsoprea/go-xmp/registry"
+	"github.com/dsoprea/go-xmp/type"
 )
 
 const (
 	// RdfUri is the 'rdf' namespace URI made a constant to support testing.
-	RdfUri = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	RdfUri = xmptype.RdfUri
 )
 
 var (

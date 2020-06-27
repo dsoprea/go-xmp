@@ -13,8 +13,7 @@ import (
 )
 
 const (
-	RdfUri = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	XmpUri = "http://ns.adobe.com/xap/1.0/"
+	xmpUri = "http://ns.adobe.com/xap/1.0/"
 )
 
 func TestParseValue_Good(t *testing.T) {
@@ -116,7 +115,7 @@ func TestParseAttributes_Ok(t *testing.T) {
 	defer xmpregistry.Clear()
 
 	xmpNamespace := xmpregistry.Namespace{
-		Uri:             XmpUri,
+		Uri:             xmpUri,
 		PreferredPrefix: "xmp",
 		Fields: map[string]interface{}{
 			"BaseURL":      UrlFieldType{},
@@ -133,8 +132,8 @@ func TestParseAttributes_Ok(t *testing.T) {
 
 	xmpregistry.Register(xmpNamespace)
 
-	labelName := xml.Name{Space: XmpUri, Local: "Label"}
-	modifyDateName := xml.Name{Space: XmpUri, Local: "ModifyDate"}
+	labelName := xml.Name{Space: xmpUri, Local: "Label"}
+	modifyDateName := xml.Name{Space: xmpUri, Local: "ModifyDate"}
 
 	rawAttributes := []xml.Attr{
 		{
@@ -168,8 +167,8 @@ func TestParseAttributes_SkipUnknownNamespaces(t *testing.T) {
 	xmpregistry.Clear()
 	defer xmpregistry.Clear()
 
-	labelName := xml.Name{Space: XmpUri, Local: "Label"}
-	modifyDateName := xml.Name{Space: XmpUri, Local: "ModifyDate"}
+	labelName := xml.Name{Space: xmpUri, Local: "Label"}
+	modifyDateName := xml.Name{Space: xmpUri, Local: "ModifyDate"}
 
 	rawAttributes := []xml.Attr{
 		{
@@ -201,7 +200,7 @@ func TestParseAttributes_SkipInvalidFields(t *testing.T) {
 	defer xmpregistry.Clear()
 
 	xmpNamespace := xmpregistry.Namespace{
-		Uri:             XmpUri,
+		Uri:             xmpUri,
 		PreferredPrefix: "xmp",
 		Fields: map[string]interface{}{
 			"BaseURL":      UrlFieldType{},
@@ -217,8 +216,8 @@ func TestParseAttributes_SkipInvalidFields(t *testing.T) {
 
 	xmpregistry.Register(xmpNamespace)
 
-	labelName := xml.Name{Space: XmpUri, Local: "Label"}
-	modifyDateName := xml.Name{Space: XmpUri, Local: "ModifyDate"}
+	labelName := xml.Name{Space: xmpUri, Local: "Label"}
+	modifyDateName := xml.Name{Space: xmpUri, Local: "ModifyDate"}
 
 	rawAttributes := []xml.Attr{
 		{

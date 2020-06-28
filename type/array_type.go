@@ -1,6 +1,7 @@
 package xmptype
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -13,6 +14,12 @@ import (
 
 var (
 	typeLogger = log.NewLogger("xmp.type")
+)
+
+var (
+	// ErrChoicesNotOverridden indicates that a particular type is not correctly
+	// overridden.
+	ErrArrayItemsNotOverridden = errors.New("array type method must be overridden")
 )
 
 const (
@@ -43,29 +50,107 @@ var (
 	}
 )
 
+// ArrayItem is the item type of the extracted array items.
 type ArrayItem struct {
-	Name       xml.Name
+	// Name is the name of the item node.
+	Name xml.Name
+
+	// Attributes are the attributes, if any, of the array item.
 	Attributes map[xml.Name]interface{}
-	CharData   string
+
+	// CharData is the trimmed char-data found in the array item.
+	CharData string
 }
 
+// String returns a string representation of the item.
+func (ai ArrayItem) String() string {
+	return fmt.Sprintf(
+		"ArrayItem<NAME={%s} ATTR={%s} CHAR-DATA=[%s]>",
+		xmpregistry.XmlName(ai.Name),
+		ai.InlineAttributes(),
+		ai.CharData)
+}
+
+// InlineAttributes returns an inline string representation of all attributes.
 func (ai ArrayItem) InlineAttributes() string {
 	return xmpregistry.InlineAttributes(ai.Attributes)
 }
 
+// ArrayValue is satisfied by all array value types.
 type ArrayValue interface {
+	// FullName returns the name of the array container.
 	FullName() xmpregistry.XmpPropertyName
+
+	// Count returns the number of items.
 	Count() int
 }
 
 // ArrayStringValueLister is any array type that has an Items() method that
 // returns a string slice.
 type ArrayStringValueLister interface {
+	// Items returns a slice of strings.
 	Items() (items []string, err error)
 }
 
+// ArrayFieldType is satisfied by all array field-types..
 type ArrayFieldType interface {
+	// New returns a new value struct encapsulating the given arguments.
 	New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue
+}
+
+// elementTagName returns the xml.Name for the ith element. isTag indicates
+// whether that element is actually a tag.
+func elementTagName(elements []interface{}, i int) (name xml.Name, isTag bool, isOpenTag bool) {
+	item := elements[i]
+	if se, ok := item.(xml.StartElement); ok == true {
+		return se.Name, true, true
+	} else if se, ok := item.(xml.EndElement); ok == true {
+		return se.Name, true, false
+	}
+
+	return name, false, false
+}
+
+// validateAnchorElements asserts that the list of elements starts and ends with
+// the given tag.
+func validateAnchorElements(elements []interface{}, name xml.Name) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	elementCount := len(elements)
+
+	if elementCount < 2 {
+		log.Panicf("expected at least two items for anchor-tag check")
+	}
+
+	firstElementTagName, firstElementIsTag, firstElementIsTagOpen := elementTagName(elements, 0)
+
+	if firstElementIsTag == false {
+		log.Panicf("expected first element in array to be a tag")
+	} else if firstElementIsTagOpen != true {
+		log.Panicf("expected first tag to be an open-tag")
+	} else if firstElementTagName != name {
+		log.Panicf(
+			"expected first element in array to be a [%s] tag: [%s]",
+			xmpregistry.XmlName(name), xmpregistry.XmlName(firstElementTagName))
+	}
+
+	lastElementTagName, lastElementIsTag, firstElementIsTagOpen := elementTagName(elements, elementCount-1)
+
+	if lastElementIsTag == false {
+		log.Panicf("expected last element in array to be a tag")
+	} else if firstElementIsTagOpen != false {
+		log.Panicf("expected last tag to be a close-tag")
+	} else if lastElementTagName != name {
+		log.Panicf(
+			"expected last element in array to be a [%s] tag: [%s]",
+			xmpregistry.XmlName(name), xmpregistry.XmlName(lastElementTagName))
+	}
+
+	return nil
 }
 
 type baseArrayValue struct {
@@ -80,73 +165,61 @@ func newBaseArrayValue(fullName xmpregistry.XmpPropertyName, collected []interfa
 	}
 }
 
-func (bav baseArrayValue) elementTagName(elements []interface{}, i int) (name xml.Name, isTag bool) {
-	item := elements[i]
-	if se, ok := item.(xml.StartElement); ok == true {
-		return se.Name, true
-	} else if se, ok := item.(xml.EndElement); ok == true {
-		return se.Name, true
-	}
-
-	return name, false
+// FullName returns the fully-qualified name of the node encapsulating the
+// array.
+func (bav baseArrayValue) FullName() xmpregistry.XmpPropertyName {
+	return bav.fullName
 }
 
-// validateAnchorElements asserts that the list of elements starts and ends with
-// the given tag.
-func (bav baseArrayValue) validateAnchorElements(elements []interface{}, name xml.Name) (err error) {
+// Count returns the number of items found/extracted from the array.
+func (bav baseArrayValue) Count() int {
+	return len(bav.collected)
+}
+
+func (bav baseArrayValue) constructArrayItem(subslice []interface{}) (ai ArrayItem, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
 		}
 	}()
 
-	elementCount := len(elements)
-
-	if elementCount < 2 {
-		log.Panicf(
-			"expected at least two items for anchor-tag check: [%s]",
-			bav.FullName())
+	subsliceLen := len(subslice)
+	if subsliceLen != 2 && subsliceLen != 3 {
+		log.Panicf("sublice length is not valid: (%d)", subsliceLen)
 	}
 
-	firstElementTagName, firstElementIsTag := bav.elementTagName(elements, 0)
+	err = validateAnchorElements(subslice, rdfLiTag)
+	log.PanicIf(err)
 
-	if firstElementIsTag == false {
-		log.Panicf(
-			"expected first element in [%s] array to be a tag",
-			bav.FullName(),
-		)
+	se := subslice[0].(xml.StartElement)
+
+	attributes, err := ParseAttributes(se)
+	log.PanicIf(err)
+
+	var charData string
+
+	if len(subslice) == 3 {
+		// There is character-data between the tags. Extract it.
+
+		charDataRaw := subslice[1]
+
+		var ok bool
+
+		charData, ok = charDataRaw.(string)
+		if ok == false {
+			log.Panicf(
+				"expected element between 'li' tags in unordered-array to be char-data: [%s] [%s]",
+				bav.FullName(), reflect.TypeOf(charData))
+		}
 	}
 
-	if firstElementTagName != name {
-		log.Panicf(
-			"expected first element in [%s] array to be a [%s] tag: [%s]",
-			bav.FullName(), xmpregistry.XmlName(name), xmpregistry.XmlName(firstElementTagName))
+	ai = ArrayItem{
+		Name:       se.Name,
+		Attributes: attributes,
+		CharData:   charData,
 	}
 
-	lastElementTagName, lastElementIsTag := bav.elementTagName(elements, elementCount-1)
-
-	if lastElementIsTag == false {
-		log.Panicf(
-			"expected last element in [%s] array to be a tag",
-			bav.FullName(),
-		)
-	}
-
-	if lastElementTagName != name {
-		log.Panicf(
-			"expected last element in [%s] array to be a [%s] tag: [%s]",
-			bav.FullName(), xmpregistry.XmlName(name), xmpregistry.XmlName(lastElementTagName))
-	}
-
-	return nil
-}
-
-func (bav baseArrayValue) FullName() xmpregistry.XmpPropertyName {
-	return bav.fullName
-}
-
-func (bav baseArrayValue) Count() int {
-	return len(bav.collected)
+	return ai, nil
 }
 
 // innerItems will extract the attributes and char-data from all elements except
@@ -162,62 +235,42 @@ func (bav baseArrayValue) innerItems(hasSandwichedCharData bool) (items []ArrayI
 	elementCount := bav.Count()
 	items = make([]ArrayItem, 0, elementCount-2)
 
-	if hasSandwichedCharData == true {
-		for i := 1; i < elementCount-1; {
-			// Check for the first and the third elements to be "li" tags.
+	firstTag := bav.collected[0].(xml.StartElement)
+	firstTagName := firstTag.Name
+	lastTag := bav.collected[len(bav.collected)-1].(xml.EndElement)
+	lastTagName := lastTag.Name
 
-			subslice := bav.collected[i : i+3]
+	if firstTagName != lastTagName {
+		log.Panicf(
+			"open and close anchor tags do not have the same name: [%s] [%s] != [%s] [%s]",
+			firstTagName.Space, firstTagName.Local, lastTagName.Space, lastTagName.Local)
+	}
 
-			err = bav.validateAnchorElements(subslice, rdfLiTag)
-			log.PanicIf(err)
+	for i := 1; i < elementCount-1; {
+		var subsliceLen int
 
-			se := subslice[0].(xml.StartElement)
-
-			attributes, err := ParseAttributes(se)
-			log.PanicIf(err)
-
-			// Extract the character-data between the tags.
-
-			charDataRaw := subslice[1]
-
-			s, ok := charDataRaw.(string)
-			if ok == false {
-				log.Panicf(
-					"expected element between 'li' tags in unordered-array to be char-data: [%s] [%s]",
-					bav.FullName(), reflect.TypeOf(s))
-			}
-
-			ci := ArrayItem{
-				Name:       se.Name,
-				Attributes: attributes,
-				CharData:   s,
-			}
-
-			items = append(items, ci)
-
-			i += len(subslice)
+		if hasSandwichedCharData == true {
+			// Two tags with char-data in the middle (three elements total).
+			subsliceLen = 3
+		} else {
+			// Two tags with no char-data in the middle (two elements total).
+			subsliceLen = 2
 		}
-	} else {
-		for i := 1; i < elementCount-1; {
-			subslice := bav.collected[i : i+2]
 
-			err = bav.validateAnchorElements(subslice, rdfLiTag)
-			log.PanicIf(err)
-
-			se := subslice[0].(xml.StartElement)
-
-			attributes, err := ParseAttributes(se)
-			log.PanicIf(err)
-
-			ci := ArrayItem{
-				Name:       se.Name,
-				Attributes: attributes,
-			}
-
-			items = append(items, ci)
-
-			i += len(subslice)
+		subslice := bav.collected[i : i+subsliceLen]
+		if len(subslice) != subsliceLen {
+			log.Panicf("number of elements does not make sense (with char-data)")
 		}
+
+		// constructArrayItem will assume that the second item is char-data if
+		// there are three items.
+
+		ai, err := bav.constructArrayItem(subslice)
+		log.PanicIf(err)
+
+		items = append(items, ai)
+
+		i += len(subslice)
 	}
 
 	return items, nil
@@ -227,6 +280,7 @@ func (bav baseArrayValue) innerItems(hasSandwichedCharData bool) (items []ArrayI
 
 // TODO(dustin): Ordered array yet-to-implement: CuePointParam, Marker, ResourceEvent, Version, Colorant, Marker, Layer, "point" (?)
 
+// OrderedArrayValue represents the items of an ordered-array.
 type OrderedArrayValue struct {
 	baseArrayValue
 }
@@ -237,10 +291,12 @@ func newOrderedArrayValue(bav baseArrayValue) OrderedArrayValue {
 	}
 }
 
+// String returns a string representation of the array state.
 func (oav OrderedArrayValue) String() string {
 	return fmt.Sprintf("OrderedArray<COUNT=(%d)>", oav.Count())
 }
 
+// Items returns a slice of all raw array items.
 func (oav OrderedArrayValue) Items() (items []ArrayItem, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
@@ -248,7 +304,7 @@ func (oav OrderedArrayValue) Items() (items []ArrayItem, err error) {
 		}
 	}()
 
-	err = oav.validateAnchorElements(oav.baseArrayValue.collected, rdfSeqTag)
+	err = validateAnchorElements(oav.baseArrayValue.collected, rdfSeqTag)
 	log.PanicIf(err)
 
 	items, err = oav.innerItems(false)
@@ -257,9 +313,12 @@ func (oav OrderedArrayValue) Items() (items []ArrayItem, err error) {
 	return items, nil
 }
 
+// OrderedArrayFieldType is a field-type that acts as a factory for the ordered-
+// array value type.
 type OrderedArrayFieldType struct {
 }
 
+// New returns a value-type for the given arguments.
 func (oat OrderedArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 
@@ -268,14 +327,18 @@ func (oat OrderedArrayFieldType) New(fullName xmpregistry.XmpPropertyName, colle
 	}
 }
 
+// OrderedTextArrayFieldType identifies the array as having text items.
 type OrderedTextArrayFieldType struct {
 	OrderedArrayFieldType
 }
 
+// OrderedUriArrayFieldType identifies the array as having URI items.
 type OrderedUriArrayFieldType struct {
 	OrderedArrayFieldType
 }
 
+// OrderedResourceEventArrayValue identifies the array as having resource-event
+// items.
 type OrderedResourceEventArrayValue struct {
 	OrderedArrayValue
 }
@@ -302,9 +365,12 @@ func (oreav OrderedResourceEventArrayValue) Items() (items []string, err error) 
 	return items, nil
 }
 
+// OrderedResourceEventArrayFieldType identifies the array as having resource-
+// event items.
 type OrderedResourceEventArrayFieldType struct {
 }
 
+// New returns a value-type for the given arguments.
 func (oreat OrderedResourceEventArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 	oav := newOrderedArrayValue(bav)
@@ -318,6 +384,7 @@ func (oreat OrderedResourceEventArrayFieldType) New(fullName xmpregistry.XmpProp
 
 // TODO(dustin): Unordered array yet-to-implement: XPath, ResourceRef, "struct" (?), Job, Font, Media, Track
 
+// UnorderedArrayValue represents the items of an unordered-array.
 type UnorderedArrayValue struct {
 	baseArrayValue
 }
@@ -328,10 +395,12 @@ func newUnorderedArrayValue(bav baseArrayValue) UnorderedArrayValue {
 	}
 }
 
+// String returns a string representation of the array state.
 func (uav UnorderedArrayValue) String() string {
 	return fmt.Sprintf("UnorderedArray<COUNT=(%d)>", uav.Count())
 }
 
+// Items returns a slice of all raw array items.
 func (uav UnorderedArrayValue) Items() (items []ArrayItem, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
@@ -339,7 +408,7 @@ func (uav UnorderedArrayValue) Items() (items []ArrayItem, err error) {
 		}
 	}()
 
-	err = uav.validateAnchorElements(uav.baseArrayValue.collected, rdfBagTag)
+	err = validateAnchorElements(uav.baseArrayValue.collected, rdfBagTag)
 	log.PanicIf(err)
 
 	items, err = uav.innerItems(true)
@@ -348,19 +417,25 @@ func (uav UnorderedArrayValue) Items() (items []ArrayItem, err error) {
 	return items, nil
 }
 
+// UnorderedArrayFieldType is a field-type that acts as a factory for the
+// unordered-array value type.
 type UnorderedArrayFieldType struct {
 }
 
+// New returns a value-type for the given arguments.
 func (uat UnorderedArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 
 	return newUnorderedArrayValue(bav)
 }
 
+// UnorderedTextArrayFieldType identifies the array as having text items.
 type UnorderedTextArrayFieldType struct {
 	UnorderedArrayFieldType
 }
 
+// UnorderedAncestorArrayValue represents the items of an unordered-array with
+// Ancestor items.
 type UnorderedAncestorArrayValue struct {
 	UnorderedArrayValue
 }
@@ -386,10 +461,13 @@ func (uaav UnorderedAncestorArrayValue) Items() (items []string, err error) {
 	return items, nil
 }
 
+// UnorderedAncestorArrayFieldType identifies the array as having Ancestor
+// items.
 type UnorderedAncestorArrayFieldType struct {
 	UnorderedArrayFieldType
 }
 
+// New returns a value-type for the given arguments.
 func (uaat UnorderedAncestorArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 
@@ -400,6 +478,7 @@ func (uaat UnorderedAncestorArrayFieldType) New(fullName xmpregistry.XmpProperty
 
 // Alternatives array semantics
 
+// AlternativeArrayValue represents the items of an alternatives-array
 type AlternativeArrayValue struct {
 	baseArrayValue
 }
@@ -410,10 +489,12 @@ func newAlternativeArrayValue(bav baseArrayValue) AlternativeArrayValue {
 	}
 }
 
+// String returns a string representation of the array state.
 func (aav AlternativeArrayValue) String() string {
 	return fmt.Sprintf("AlternativeArray<COUNT=(%d)>", aav.Count())
 }
 
+// Items returns a slice of all raw array items.
 func (aav AlternativeArrayValue) Items() (items []ArrayItem, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
@@ -421,7 +502,7 @@ func (aav AlternativeArrayValue) Items() (items []ArrayItem, err error) {
 		}
 	}()
 
-	err = aav.validateAnchorElements(aav.baseArrayValue.collected, rdfAltTag)
+	err = validateAnchorElements(aav.baseArrayValue.collected, rdfAltTag)
 	log.PanicIf(err)
 
 	items, err = aav.innerItems(true)
@@ -430,9 +511,12 @@ func (aav AlternativeArrayValue) Items() (items []ArrayItem, err error) {
 	return items, nil
 }
 
+// AlternativeArrayFieldType is a field-type that acts as a factory for the
+// actual value type.
 type AlternativeArrayFieldType struct {
 }
 
+// New returns a value-type for the given arguments.
 func (aat AlternativeArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 
@@ -441,10 +525,14 @@ func (aat AlternativeArrayFieldType) New(fullName xmpregistry.XmpPropertyName, c
 	}
 }
 
+// LanguageAlternativeArrayValue represents the items of an alternatives-array.
 type LanguageAlternativeArrayValue struct {
 	AlternativeArrayValue
 }
 
+// Items this is a wrapper that returns a simple list of strings from inner
+// underlying array-items, thereby satisfying the ArrayStringValueLister
+// interface.
 func (laav LanguageAlternativeArrayValue) Items() (items []string, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
@@ -463,9 +551,12 @@ func (laav LanguageAlternativeArrayValue) Items() (items []string, err error) {
 	return items, nil
 }
 
+// LanguageAlternativeArrayFieldType is a field-type that acts as a factory for
+// the alternatives-array value type.
 type LanguageAlternativeArrayFieldType struct {
 }
 
+// New returns a value-type for the given arguments.
 func (laat LanguageAlternativeArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 	aav := newAlternativeArrayValue(bav)

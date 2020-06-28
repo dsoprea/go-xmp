@@ -57,6 +57,8 @@ func Register(namespace Namespace) {
 
 // Clear removes all namespace registrations. Supports testing.
 func Clear() {
+	ClearCachedPrefixes()
+
 	namespaces = make(map[string]Namespace)
 	unknownNamespaces = make(map[string]struct{})
 }

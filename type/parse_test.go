@@ -12,10 +12,6 @@ import (
 	"github.com/dsoprea/go-xmp/registry"
 )
 
-const (
-	xmpUri = "http://ns.adobe.com/xap/1.0/"
-)
-
 func TestParseValue_Good(t *testing.T) {
 	namespace := xmpregistry.Namespace{
 		Uri: "some/uri",

@@ -12,8 +12,20 @@ type DateFieldValue struct {
 var (
 	timeLayouts = []string{
 		"2006-01-02T15:04:05.999999999Z-07:00",
+
+		// Nonstandard but found in practice.
+		"2006-01-02T15:04:05.999999999-07:00",
+
 		"2006-01-02T15:04:05Z-07:00",
+
+		// Nonstandard but found in practice.
+		"2006-01-02T15:04:05-07:00",
+
 		"2006-01-02T15:04Z-07:00",
+
+		// Nonstandard but found in practice.
+		"2006-01-02T15:04-07:00",
+
 		"2006-01-02",
 		"2006-01",
 		"2006",

@@ -32,13 +32,13 @@ var (
 		Space: RdfUri,
 		Local: "li",
 	}
-)
 
-func init() {
-	namespace := xmpregistry.Namespace{
+	RdfNamespace = xmpregistry.Namespace{
 		Uri:             RdfUri,
 		PreferredPrefix: "rdf",
 	}
+)
 
-	xmpregistry.Register(namespace)
+func init() {
+	xmpregistry.Register(RdfNamespace)
 }

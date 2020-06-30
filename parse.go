@@ -154,7 +154,12 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 		}
 	}()
 
+	// TODO(dustin): Expand the unit-tests.
+
 	xp.lastCharData = nil
+
+	// Note that there are other tags that may be outside of the RDF/description
+	// nodes, but that the XMP data is *within* them.
 
 	if t.Name == xmpnamespace.RdfTag {
 		if xp.rdfIsOpen == true {
@@ -222,9 +227,13 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 		}
 	}()
 
+	// TODO(dustin): Expand the unit-tests.
+
 	if t.Name == xmpnamespace.RdfTag {
 		if xp.rdfIsOpen == false {
 			log.Panicf("RDF is not open")
+		} else if xp.rdfDescriptionIsOpen != false {
+			log.Panicf("RDF document node closed before description node closed")
 		}
 
 		xp.rdfIsOpen = false
@@ -343,6 +352,8 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 		}
 	}()
 
+	// TODO(dustin): Expand the unit-tests.
+
 	xpn := xmpregistry.XmpPropertyName(xp.nameStack)
 
 	// Parse a normal node.
@@ -389,12 +400,19 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 	return nil
 }
 
+// parseCharDataToken processes a char-data token encountered by the parser.
+// Note that tangible processing is deferred until we see an end-token in order
+// to ignore char-data on nodes that have child nodes ("tree nodes" versus "
+// value nodes", both of which will have char-data, which is likely always blank
+// for tree nodes).
 func (xp *Parser) parseCharDataToken(xpi *XmpPropertyIndex, t xml.CharData, lastToken xml.Token) (err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
 		}
 	}()
+
+	// TODO(dustin): Expand the unit-tests.
 
 	// Scope any intermediate nodes that we don't care about (like "
 	// xmpmeta"-space tags).

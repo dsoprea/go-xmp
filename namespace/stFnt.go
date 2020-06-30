@@ -14,8 +14,8 @@ const (
 // Specification has both "String" and "Text" fields. "String" fields are not
 // defined, so using "Text" instead.
 
-func init() {
-	namespace := xmpregistry.Namespace{
+var (
+	StFntNamespace = xmpregistry.Namespace{
 		Uri:             StFntUri,
 		PreferredPrefix: "stFnt",
 		Fields: map[string]interface{}{
@@ -29,6 +29,8 @@ func init() {
 			"versionString":  xmptype.TextFieldType{},
 		},
 	}
+)
 
-	xmpregistry.Register(namespace)
+func init() {
+	xmpregistry.Register(StFntNamespace)
 }

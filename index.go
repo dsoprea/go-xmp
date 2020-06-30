@@ -90,6 +90,10 @@ func (xpi *XmpPropertyIndex) addArrayValue(xpn xmpregistry.XmpPropertyName, arra
 		}
 	}()
 
+	if len(xpn) == 0 {
+		log.Panicf("array value must have non-empty property-name")
+	}
+
 	err = xpi.addValue(xpn, array)
 	log.PanicIf(err)
 
@@ -108,6 +112,10 @@ func (xpi *XmpPropertyIndex) addScalarValue(xpn xmpregistry.XmpPropertyName, par
 			err = log.Wrap(errRaw.(error))
 		}
 	}()
+
+	if len(xpn) == 0 {
+		log.Panicf("scalar value must have non-empty property-name")
+	}
 
 	currentNodeName := xpn[len(xpn)-1]
 
@@ -143,6 +151,10 @@ func (xpi *XmpPropertyIndex) addComplexValue(xpn xmpregistry.XmpPropertyName, at
 			err = log.Wrap(errRaw.(error))
 		}
 	}()
+
+	if len(xpn) == 0 {
+		log.Panicf("complex value must have non-empty property-name")
+	}
 
 	cn := ComplexLeafNode(attributes)
 

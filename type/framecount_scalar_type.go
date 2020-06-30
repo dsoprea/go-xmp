@@ -1,5 +1,6 @@
 package xmptype
 
+// FrameCountFieldValue knows how to parse frame-count expressions.
 type FrameCountFieldValue struct {
 	TextFieldValue
 }

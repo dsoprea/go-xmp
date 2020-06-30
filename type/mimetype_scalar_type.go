@@ -1,10 +1,11 @@
 package xmptype
 
+// MimeTypeFieldValue knows how to parse a mime-type.
 type MimeTypeFieldValue struct {
 	TextFieldValue
 }
 
-// MimetypeFieldType represents a MIME-type.
+// MimeTypeFieldType represents a MIME-type.
 type MimeTypeFieldType struct {
 }
 

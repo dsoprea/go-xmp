@@ -1,5 +1,6 @@
 package xmptype
 
+// UriFieldValue knows how to parse a URI value.
 type UriFieldValue struct {
 	TextFieldValue
 }

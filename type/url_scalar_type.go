@@ -1,5 +1,6 @@
 package xmptype
 
+// UrlFieldValue knows how to parse a URL value.
 type UrlFieldValue struct {
 	TextFieldValue
 }

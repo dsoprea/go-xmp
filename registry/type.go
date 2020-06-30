@@ -87,7 +87,7 @@ func InlineAttributes(attributes map[xml.Name]interface{}) string {
 	mapping := make(map[string]xml.Name)
 
 	i := 0
-	for k, _ := range attributes {
+	for k := range attributes {
 		phrase := XmlName(k).String()
 		keys[i] = phrase
 		mapping[phrase] = k

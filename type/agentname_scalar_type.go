@@ -1,5 +1,6 @@
 package xmptype
 
+// AgentNameFieldValue knows how to parse an agent-name value.
 type AgentNameFieldValue struct {
 	TextFieldValue
 }

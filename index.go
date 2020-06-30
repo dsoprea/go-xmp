@@ -24,6 +24,7 @@ var (
 	ErrFieldNotFound = errors.New("node not found in document")
 )
 
+// ValueParser knows how to parse raw values.
 type ValueParser interface {
 	Parse() (parsed interface{}, err error)
 }
@@ -46,14 +47,6 @@ func newXmpPropertyIndex(nodeName xmpregistry.XmlName) *XmpPropertyIndex {
 	}
 
 	return xpi
-}
-
-func (xpi *XmpPropertyIndex) isRoot() bool {
-	return xpi.nodeName.Local == ""
-}
-
-func (xpi *XmpPropertyIndex) name() xmpregistry.XmlName {
-	return xpi.nodeName
 }
 
 func (xpi *XmpPropertyIndex) addValue(xpn xmpregistry.XmpPropertyName, value interface{}) (err error) {
@@ -103,6 +96,7 @@ func (xpi *XmpPropertyIndex) addArrayValue(xpn xmpregistry.XmpPropertyName, arra
 	return nil
 }
 
+// ScalarLeafNode describes a node having a value stored in the index.
 type ScalarLeafNode struct {
 	Name        xml.Name
 	ParsedValue interface{}
@@ -128,8 +122,10 @@ func (xpi *XmpPropertyIndex) addScalarValue(xpn xmpregistry.XmpPropertyName, par
 	return nil
 }
 
+// ComplexLeafNode describes the attributes of a leaf node.
 type ComplexLeafNode map[xml.Name]interface{}
 
+// Get retrieves the given complex node from the index.
 func (cln ComplexLeafNode) Get(uri string, local string) (value interface{}, found bool) {
 	name := xml.Name{
 		Space: uri,

@@ -5,15 +5,18 @@ import (
 	"strings"
 )
 
+// RationalFieldValue knows how to parse rationals/fractions.
 type RationalFieldValue struct {
 	raw string
 }
 
+// Rational describes a single rational/fraction.
 type Rational struct {
 	Numerator   int64
 	Denominator int64
 }
 
+// Parse parses the raw string value.
 func (rfv RationalFieldValue) Parse() (parsed interface{}, err error) {
 	parts := strings.Split(rfv.raw, "/")
 	if len(parts) != 2 {

@@ -4,10 +4,12 @@ import (
 	"strconv"
 )
 
+// IntegerFieldValue nows how to parse integer values.
 type IntegerFieldValue struct {
 	raw string
 }
 
+// Parse parses the raw string value.
 func (ifv IntegerFieldValue) Parse() (parsed interface{}, err error) {
 	n, err := strconv.ParseInt(ifv.raw, 10, 64)
 	if err != nil {

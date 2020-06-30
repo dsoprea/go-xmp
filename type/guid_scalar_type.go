@@ -1,5 +1,6 @@
 package xmptype
 
+// GuidFieldValue knows how to parse a GUID.
 type GuidFieldValue struct {
 	TextFieldValue
 }
@@ -8,7 +9,7 @@ type GuidFieldValue struct {
 type GuidFieldType struct {
 }
 
-// A XMP GUID is an opaque string that may or may not look like a URI acording
+// A XMP GUID is an opaque string that may or may not look like a URI according
 // to the specification.
 
 // GetValueParser returns an instance of ScalarValueParser initialized to

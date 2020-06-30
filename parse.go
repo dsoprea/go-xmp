@@ -69,6 +69,7 @@ func (raa rawAttributeAssignment) parse() (string, string) {
 	return name, value
 }
 
+// EmbeddedArray describes an array found in another array.
 type EmbeddedArray struct {
 	name      xml.Name
 	collected []interface{}
@@ -124,9 +125,9 @@ func (xp *Parser) isArrayNode(name xml.Name) (flag bool, err error) {
 	if err != nil {
 		if err == xmpregistry.ErrNamespaceNotFound {
 			return false, nil
-		} else {
-			log.Panic(err)
 		}
+
+		log.Panic(err)
 	}
 
 	flag, err = xmptype.IsArrayType(nodeNamespace, nodeLocalName)
@@ -138,9 +139,9 @@ func (xp *Parser) isArrayNode(name xml.Name) (flag bool, err error) {
 				nodeNamespaceUri, nodeLocalName, nodeLocalName)
 
 			return false, nil
-		} else {
-			log.Panic(err)
 		}
+
+		log.Panic(err)
 	}
 
 	return flag, nil

@@ -17,8 +17,8 @@ var (
 )
 
 var (
-	// ErrChoicesNotOverridden indicates that a particular type is not correctly
-	// overridden.
+	// ErrArrayItemsNotOverridden indicates that a particular type is not
+	// correctly overridden.
 	ErrArrayItemsNotOverridden = errors.New("array type method must be overridden")
 )
 

@@ -1,5 +1,6 @@
 package xmptype
 
+// ProperNameFieldValue knows how to parse a proper-name.
 type ProperNameFieldValue struct {
 	TextFieldValue
 }

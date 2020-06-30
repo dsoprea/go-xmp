@@ -1,5 +1,6 @@
 package xmptype
 
+// PartFieldValue knows how to parse part values.
 type PartFieldValue struct {
 	TextFieldValue
 }

@@ -1,5 +1,6 @@
 package xmptype
 
+// LocaleFieldValue knows how to parse a locale.
 type LocaleFieldValue struct {
 	TextFieldValue
 }

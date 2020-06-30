@@ -4,6 +4,7 @@ import (
 	"time"
 )
 
+// DateFieldValue knows how to parse dates/timestamps.
 type DateFieldValue struct {
 	raw string
 }
@@ -19,6 +20,7 @@ var (
 	}
 )
 
+// Parse parses the raw string value.
 func (dfv DateFieldValue) Parse() (parsed interface{}, err error) {
 	for _, layout := range timeLayouts {
 		t, err := time.Parse(layout, dfv.raw)

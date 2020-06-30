@@ -294,8 +294,8 @@ func TestInlineAttributes(t *testing.T) {
 	Register(namespace2)
 
 	attributes := map[xml.Name]interface{}{
-		xml.Name{Space: namespaceUri1, Local: "aa"}: "value1",
-		xml.Name{Space: namespaceUri2, Local: "bb"}: "value2",
+		{Space: namespaceUri1, Local: "aa"}: "value1",
+		{Space: namespaceUri2, Local: "bb"}: "value2",
 	}
 
 	phrase := InlineAttributes(attributes)

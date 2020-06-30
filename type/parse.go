@@ -16,11 +16,13 @@ var (
 )
 
 var (
-	// ErrChildFieldNotValid indicates that the given complex type has no child
+	// ErrChildFieldNotFound indicates that the given complex type has no child
 	// field with the given name.
 	ErrChildFieldNotFound = errors.New("field not found")
 )
 
+// ParseValue knows how to parse any value for registered namespaces with
+// knowledge of the given field.
 func ParseValue(namespace xmpregistry.Namespace, fieldName string, rawValue string) (parsedValue interface{}, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
@@ -51,6 +53,7 @@ func ParseValue(namespace xmpregistry.Namespace, fieldName string, rawValue stri
 	return parsedValue, nil
 }
 
+// IsArrayType returns true if the field-type is an array-type.
 func IsArrayType(namespace xmpregistry.Namespace, fieldName string) (flag bool, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
@@ -69,6 +72,7 @@ func IsArrayType(namespace xmpregistry.Namespace, fieldName string) (flag bool, 
 	return ok, nil
 }
 
+// ParseAttributes parses attributes and returns a map.
 func ParseAttributes(se xml.StartElement) (attributes map[xml.Name]interface{}, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {

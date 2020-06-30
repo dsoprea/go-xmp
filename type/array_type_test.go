@@ -17,8 +17,8 @@ func TestArrayItem_InlineAttributes(t *testing.T) {
 	registerTestNamespaces()
 
 	attributes := map[xml.Name]interface{}{
-		xml.Name{Space: RdfUri, Local: "aa"}: "value1",
-		xml.Name{Space: xmpUri, Local: "bb"}: "value2",
+		{Space: RdfUri, Local: "aa"}: "value1",
+		{Space: xmpUri, Local: "bb"}: "value2",
 	}
 
 	ai := ArrayItem{
@@ -36,8 +36,8 @@ func TestArrayItem_String(t *testing.T) {
 	registerTestNamespaces()
 
 	attributes := map[xml.Name]interface{}{
-		xml.Name{Space: RdfUri, Local: "aa"}: "value1",
-		xml.Name{Space: xmpUri, Local: "bb"}: "value2",
+		{Space: RdfUri, Local: "aa"}: "value1",
+		{Space: xmpUri, Local: "bb"}: "value2",
 	}
 
 	ai := ArrayItem{
@@ -279,12 +279,12 @@ func TestBaseArrayValue_innerItems_WithChardata(t *testing.T) {
 	}
 
 	expectedItems := []ArrayItem{
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
 			CharData:   "value2",
 		},
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
 			CharData:   "value1",
@@ -321,11 +321,11 @@ func TestBaseArrayValue_innerItems_WithoutChardata(t *testing.T) {
 	}
 
 	expectedItems := []ArrayItem{
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
 		},
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
 		},
@@ -387,11 +387,11 @@ func TestOrderedArrayValue_Items(t *testing.T) {
 	}
 
 	expectedItems := []ArrayItem{
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
 		},
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
 		},
@@ -430,11 +430,11 @@ func TestOrderedArrayFieldType_New(t *testing.T) {
 	}
 
 	expectedItems := []ArrayItem{
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
 		},
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
 		},
@@ -521,11 +521,11 @@ func TestOrderedResourceEventArrayFieldType_New(t *testing.T) {
 	}
 
 	expectedItems := []ArrayItem{
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
 		},
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
 		},
@@ -609,12 +609,12 @@ func TestUnorderedArrayValue_Items(t *testing.T) {
 	}
 
 	expectedItems := []ArrayItem{
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
 			CharData:   "value2",
 		},
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
 			CharData:   "value1",
@@ -654,12 +654,12 @@ func TestUnorderedArrayFieldType_New(t *testing.T) {
 	}
 
 	expectedItems := []ArrayItem{
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
 			CharData:   "value2",
 		},
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
 			CharData:   "value1",
@@ -703,12 +703,12 @@ func TestUnorderedAncestorArrayFieldType_New(t *testing.T) {
 	}
 
 	expectedItems := []ArrayItem{
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
 			CharData:   "value2",
 		},
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
 			CharData:   "value1",
@@ -801,12 +801,12 @@ func TestAlternativeArrayValue_Items(t *testing.T) {
 	}
 
 	expectedItems := []ArrayItem{
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
 			CharData:   "value2",
 		},
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
 			CharData:   "value1",
@@ -848,12 +848,12 @@ func TestAlternativeArrayFieldType_New(t *testing.T) {
 	}
 
 	expectedItems := []ArrayItem{
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
 			CharData:   "value2",
 		},
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
 			CharData:   "value1",
@@ -939,12 +939,12 @@ func TestLanguageAlternativeArrayFieldType_New(t *testing.T) {
 	}
 
 	expectedItems := []ArrayItem{
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
 			CharData:   "value2",
 		},
-		ArrayItem{
+		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
 			CharData:   "value1",

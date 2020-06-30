@@ -1,12 +1,11 @@
 package xmptype
 
+// RenditionClassFieldValue knows how to parse a rendition-class string.
 type RenditionClassFieldValue struct {
 	OpenChoiceFieldValue
 }
 
-// OpenChoiceFieldType represents a string that could or should (depending
-// on the definition of the field in the standard) be taken from a list of
-// defined choices. The defined choices are only suggested candidate values.
+// RenditionClassFieldType describes a rendition-class value.
 type RenditionClassFieldType struct {
 }
 

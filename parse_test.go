@@ -22,6 +22,13 @@ var (
 )
 
 func TestParser_Parse_Complex(t *testing.T) {
+	xmpregistry.Clear()
+	defer xmpregistry.Clear()
+
+	xmpregistry.Register(xmpnamespace.XNamespace)
+	xmpregistry.Register(xmpnamespace.XmpMmNamespace)
+	xmpregistry.Register(xmpnamespace.StRefNamespace)
+
 	data := GetTestData()
 	b := bytes.NewBuffer(data)
 	xp := NewParser(b)
@@ -170,6 +177,11 @@ func TestParser_parseCharDataToken(t *testing.T) {
 }
 
 func TestParser_parseEndElementToken_pushToIndex(t *testing.T) {
+	xmpregistry.Clear()
+	defer xmpregistry.Clear()
+
+	xmpregistry.Register(xmpnamespace.XmpNamespace)
+
 	xp := NewParser(nil)
 
 	xp.rdfIsOpen = true

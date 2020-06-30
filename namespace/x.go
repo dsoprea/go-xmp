@@ -9,11 +9,13 @@ const (
 	XUri = "adobe:ns:meta/"
 )
 
-func init() {
-	namespace := xmpregistry.Namespace{
+var (
+	XNamespace = xmpregistry.Namespace{
 		Uri:             XUri,
 		PreferredPrefix: "x",
 	}
+)
 
-	xmpregistry.Register(namespace)
+func init() {
+	xmpregistry.Register(XNamespace)
 }

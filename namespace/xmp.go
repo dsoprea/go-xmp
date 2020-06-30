@@ -10,8 +10,8 @@ const (
 	XmpUri = "http://ns.adobe.com/xap/1.0/"
 )
 
-func init() {
-	namespace := xmpregistry.Namespace{
+var (
+	XmpNamespace = xmpregistry.Namespace{
 		Uri:             XmpUri,
 		PreferredPrefix: "xmp",
 		Fields: map[string]interface{}{
@@ -29,6 +29,8 @@ func init() {
 			//			"Thumbnails":
 		},
 	}
+)
 
-	xmpregistry.Register(namespace)
+func init() {
+	xmpregistry.Register(XmpNamespace)
 }

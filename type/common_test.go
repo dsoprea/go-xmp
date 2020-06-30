@@ -47,14 +47,14 @@ func getTestSequenceItemsWithoutChardata() []interface{} {
 	attribute2Name := xml.Name{Space: RdfUri, Local: "item2"}
 
 	attributes1 := []xml.Attr{
-		xml.Attr{Name: attribute1Name, Value: "test_value_1"},
-		xml.Attr{Name: attribute2Name, Value: "test_value_2"},
+		{Name: attribute1Name, Value: "test_value_1"},
+		{Name: attribute2Name, Value: "test_value_2"},
 	}
 
 	// We're deliberately misordering these.
 	attributes2 := []xml.Attr{
-		xml.Attr{Name: attribute1Name, Value: "test_value_4"},
-		xml.Attr{Name: attribute2Name, Value: "test_value_3"},
+		{Name: attribute1Name, Value: "test_value_4"},
+		{Name: attribute2Name, Value: "test_value_3"},
 	}
 
 	// We're deliberately misordering these.
@@ -85,14 +85,14 @@ func getTestSequenceItemsWithChardata() []interface{} {
 	attribute2Name := xml.Name{Space: RdfUri, Local: "item2"}
 
 	attributes1 := []xml.Attr{
-		xml.Attr{Name: attribute1Name, Value: "test_value_1"},
-		xml.Attr{Name: attribute2Name, Value: "test_value_2"},
+		{Name: attribute1Name, Value: "test_value_1"},
+		{Name: attribute2Name, Value: "test_value_2"},
 	}
 
 	// We're deliberately misordering these.
 	attributes2 := []xml.Attr{
-		xml.Attr{Name: attribute1Name, Value: "test_value_4"},
-		xml.Attr{Name: attribute2Name, Value: "test_value_3"},
+		{Name: attribute1Name, Value: "test_value_4"},
+		{Name: attribute2Name, Value: "test_value_3"},
 	}
 
 	// We're deliberately misordering these.
@@ -125,14 +125,14 @@ func getTestBagItemsWithChardata() []interface{} {
 	attribute2Name := xml.Name{Space: RdfUri, Local: "item2"}
 
 	attributes1 := []xml.Attr{
-		xml.Attr{Name: attribute1Name, Value: "test_value_1"},
-		xml.Attr{Name: attribute2Name, Value: "test_value_2"},
+		{Name: attribute1Name, Value: "test_value_1"},
+		{Name: attribute2Name, Value: "test_value_2"},
 	}
 
 	// We're deliberately misordering these.
 	attributes2 := []xml.Attr{
-		xml.Attr{Name: attribute1Name, Value: "test_value_4"},
-		xml.Attr{Name: attribute2Name, Value: "test_value_3"},
+		{Name: attribute1Name, Value: "test_value_4"},
+		{Name: attribute2Name, Value: "test_value_3"},
 	}
 
 	// We're deliberately misordering these.
@@ -165,14 +165,14 @@ func getTestAltItemsWithChardata() []interface{} {
 	attribute2Name := xml.Name{Space: RdfUri, Local: "item2"}
 
 	attributes1 := []xml.Attr{
-		xml.Attr{Name: attribute1Name, Value: "test_value_1"},
-		xml.Attr{Name: attribute2Name, Value: "test_value_2"},
+		{Name: attribute1Name, Value: "test_value_1"},
+		{Name: attribute2Name, Value: "test_value_2"},
 	}
 
 	// We're deliberately misordering these.
 	attributes2 := []xml.Attr{
-		xml.Attr{Name: attribute1Name, Value: "test_value_4"},
-		xml.Attr{Name: attribute2Name, Value: "test_value_3"},
+		{Name: attribute1Name, Value: "test_value_4"},
+		{Name: attribute2Name, Value: "test_value_3"},
 	}
 
 	// We're deliberately misordering these.

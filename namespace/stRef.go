@@ -11,8 +11,8 @@ const (
 	StRefUri = "http://ns.adobe.com/xap/1.0/sType/ResourceRef#"
 )
 
-func init() {
-	namespace := xmpregistry.Namespace{
+var (
+	StRefNamespace = xmpregistry.Namespace{
 		Uri:             StRefUri,
 		PreferredPrefix: "stRef",
 		Fields: map[string]interface{}{
@@ -34,6 +34,8 @@ func init() {
 			"versionID":       xmptype.TextFieldType{},
 		},
 	}
+)
 
-	xmpregistry.Register(namespace)
+func init() {
+	xmpregistry.Register(StRefNamespace)
 }

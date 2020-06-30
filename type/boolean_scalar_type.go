@@ -1,9 +1,11 @@
 package xmptype
 
+// BooleanFieldValue knows how to parse boolean values.
 type BooleanFieldValue struct {
 	raw string
 }
 
+// Parse parses the raw string value.
 func (bfv BooleanFieldValue) Parse() (parsed interface{}, err error) {
 	if bfv.raw == "True" {
 		return true, nil

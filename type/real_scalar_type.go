@@ -4,10 +4,12 @@ import (
 	"strconv"
 )
 
+// RealFieldValue knows how to parse a float.
 type RealFieldValue struct {
 	raw string
 }
 
+// Parse parses the raw string.
 func (rfv RealFieldValue) Parse() (parsed interface{}, err error) {
 	f, err := strconv.ParseFloat(rfv.raw, 64)
 	if err != nil {

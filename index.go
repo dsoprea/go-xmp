@@ -212,10 +212,13 @@ func (xpi *XmpPropertyIndex) dump(prefix []string) {
 		fqName := append(prefix, name)
 		fqNamePhrase := strings.Join(fqName, ".")
 
-		for _, value := range values {
+		for i, value := range values {
 			if sl, ok := value.(xmptype.ArrayStringValueLister); ok == true {
 				items, err := sl.Items()
-				log.PanicIf(err)
+				if err != nil {
+					fmt.Printf("%s: Had trouble enumerating array items under leaf (%d).\n\n", fqNamePhrase, i)
+					log.Panic(err)
+				}
 
 				fmt.Printf("%s:\n\n  ARRAY [%s]\n  COUNT (%d)\n", fqNamePhrase, reflect.TypeOf(sl), len(items))
 				fmt.Printf("\n")

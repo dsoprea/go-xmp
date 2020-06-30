@@ -133,11 +133,6 @@ func (xp *Parser) isArrayNode(name xml.Name) (flag bool, err error) {
 	flag, err = xmptype.IsArrayType(nodeNamespace, nodeLocalName)
 	if err != nil {
 		if err == xmptype.ErrChildFieldNotFound {
-			parseLogger.Warningf(
-				nil,
-				"Namespace [%s] for node [%s] is not known to have child [%s]. Skipping array check.",
-				nodeNamespaceUri, nodeLocalName, nodeLocalName)
-
 			return false, nil
 		}
 
@@ -265,7 +260,7 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 
 				parseLogger.Warningf(
 					nil,
-					"We encountered an array item that wasn't in an array, likely because it is in an unregistered namespace: [%s]",
+					"We encountered an array item that wasn't in an array, likely because it is in an unregistered namespace (or because its parent types should have an array type and do not): [%s]",
 					xpn)
 			} else {
 				// This is an array item. Since the value is encapsulated, it will

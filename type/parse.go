@@ -46,7 +46,7 @@ func ParseValue(namespace xmpregistry.Namespace, fieldName string, rawValue stri
 
 	parsedValue, err = parser.Parse()
 	if err != nil {
-		parseLogger.Warningf(nil, "Could not parse value: NS=[%s] FIELD=[%s] VALUE=[%s]", namespaceUri, fieldName, rawValue)
+		parseLogger.Warningf(nil, "Could not parse value: NS=[%s] FIELD=[%s] VALUE=[%s] PARSER=[%v]", namespaceUri, fieldName, rawValue, reflect.TypeOf(parser))
 		return nil, err
 	}
 
@@ -98,12 +98,14 @@ func ParseAttributes(se xml.StartElement) (attributes map[xml.Name]interface{}, 
 
 		parsedValue, err := ParseValue(attributeNamespace, attributeLocalName, attributeRawValue)
 		if err != nil {
-			if err == ErrChildFieldNotFound || err == ErrValueNotValid {
+			if err == ErrChildFieldNotFound {
 				parseLogger.Warningf(
 					nil,
-					"Could not parse attribute [%s] [%s] value: [%s]",
+					"Could not parse attribute [%s] [%s] value (unrecognized namespace field): [%s]",
 					attributeNamespaceUri, attributeLocalName, attributeRawValue)
 
+				continue
+			} else if err == ErrValueNotValid {
 				continue
 			}
 

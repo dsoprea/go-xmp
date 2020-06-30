@@ -112,7 +112,9 @@ func elementTagName(elements []interface{}, i int) (name xml.Name, isTag bool, i
 }
 
 // validateAnchorElements asserts that the list of elements starts and ends with
-// the given tag.
+// the given tag. Note that any failures here are likely due to mistyping a
+// field in such a way that we expect or don't expect char-data between tags
+// when we shouldn't.
 func validateAnchorElements(elements []interface{}, name xml.Name) (err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
@@ -140,11 +142,36 @@ func validateAnchorElements(elements []interface{}, name xml.Name) (err error) {
 
 	lastElementTagName, lastElementIsTag, firstElementIsTagOpen := elementTagName(elements, elementCount-1)
 
+	printElements := func() {
+		fmt.Printf("Element dump:\n")
+		fmt.Printf("\n")
+
+		for i, x := range elements {
+			fmt.Printf("%d: [%v] [%v]\n", i, reflect.TypeOf(x), x)
+		}
+	}
+
 	if lastElementIsTag == false {
-		log.Panicf("expected last element in array to be a tag")
+		fmt.Printf("\n")
+
+		printElements()
+		fmt.Printf("\n")
+
+		e := elements[len(elements)-1]
+		log.Panicf("expected last element in array to be a tag: [%v] [%v]", reflect.TypeOf(e), e)
 	} else if firstElementIsTagOpen != false {
+		fmt.Printf("\n")
+
+		printElements()
+		fmt.Printf("\n")
+
 		log.Panicf("expected last tag to be a close-tag")
 	} else if lastElementTagName != name {
+		fmt.Printf("\n")
+
+		printElements()
+		fmt.Printf("\n")
+
 		log.Panicf(
 			"expected last element in array to be a [%s] tag: [%s]",
 			xmpregistry.XmlName(name), xmpregistry.XmlName(lastElementTagName))
@@ -322,14 +349,50 @@ type OrderedArrayFieldType struct {
 func (oat OrderedArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
 	bav := newBaseArrayValue(fullName, collected)
 
-	return OrderedArrayValue{
-		baseArrayValue: bav,
+	return newOrderedArrayValue(bav)
+}
+
+// OrderedTextArrayValue identifies the array as having resource-event
+// items.
+type OrderedTextArrayValue struct {
+	OrderedArrayValue
+}
+
+// Items this is a wrapper that returns a simple list of strings from inner
+// underlying array-items, thereby satisfying the ArrayStringValueLister
+// interface. In the case of these, we return a stringification of the
+// attributes.
+func (otav OrderedTextArrayValue) Items() (items []string, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	innerItems, err := otav.OrderedArrayValue.Items()
+	log.PanicIf(err)
+
+	items = make([]string, len(innerItems))
+	for i, ai := range innerItems {
+		items[i] = ai.CharData
 	}
+
+	return items, nil
 }
 
 // OrderedTextArrayFieldType identifies the array as having text items.
 type OrderedTextArrayFieldType struct {
 	OrderedArrayFieldType
+}
+
+// New returns a value-type for the given arguments.
+func (oat OrderedTextArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
+	bav := newBaseArrayValue(fullName, collected)
+	oav := newOrderedArrayValue(bav)
+
+	return OrderedTextArrayValue{
+		OrderedArrayValue: oav,
+	}
 }
 
 // OrderedUriArrayFieldType identifies the array as having URI items.
@@ -429,9 +492,46 @@ func (uat UnorderedArrayFieldType) New(fullName xmpregistry.XmpPropertyName, col
 	return newUnorderedArrayValue(bav)
 }
 
+// UnorderedTextArrayValue represents the items of an unordered-array with
+// Ancestor items.
+type UnorderedTextArrayValue struct {
+	UnorderedArrayValue
+}
+
+// Items this is a wrapper that returns a simple list of strings from inner
+// underlying array-items, thereby satisfying the ArrayStringValueLister
+// interface.
+func (utav UnorderedTextArrayValue) Items() (items []string, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	innerItems, err := utav.UnorderedArrayValue.Items()
+	log.PanicIf(err)
+
+	items = make([]string, len(innerItems))
+	for i, ai := range innerItems {
+		items[i] = ai.CharData
+	}
+
+	return items, nil
+}
+
 // UnorderedTextArrayFieldType identifies the array as having text items.
 type UnorderedTextArrayFieldType struct {
 	UnorderedArrayFieldType
+}
+
+// New returns a value-type for the given arguments.
+func (uat UnorderedTextArrayFieldType) New(fullName xmpregistry.XmpPropertyName, collected []interface{}) ArrayValue {
+	bav := newBaseArrayValue(fullName, collected)
+	uav := newUnorderedArrayValue(bav)
+
+	return UnorderedTextArrayValue{
+		UnorderedArrayValue: uav,
+	}
 }
 
 // UnorderedAncestorArrayValue represents the items of an unordered-array with

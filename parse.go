@@ -142,6 +142,29 @@ func (xp *Parser) isArrayNode(name xml.Name) (flag bool, err error) {
 	return flag, nil
 }
 
+func (xp *Parser) isInArray() bool {
+
+	// TODO(dustin): Add test
+
+	return len(xp.unfinishedArrayLayers) > 0
+}
+
+func (xp *Parser) collectForCurrentArray(element interface{}) {
+
+	// TODO(dustin): Add test
+
+	if len(xp.unfinishedArrayLayers) == 0 {
+		log.Panicf("no array currently open")
+	}
+
+	currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
+
+	xp.unfinishedArrayLayers[currentLayerNumber] =
+		append(
+			xp.unfinishedArrayLayers[currentLayerNumber],
+			element)
+}
+
 func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartElement) (err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
@@ -187,15 +210,14 @@ func (xp *Parser) parseStartElementToken(xpi *XmpPropertyIndex, t xml.StartEleme
 		// attributes on the start-tag, so we won't gather them.
 
 		xp.unfinishedArrayLayers = append(xp.unfinishedArrayLayers, make([]interface{}, 0))
-	} else if len(xp.unfinishedArrayLayers) > 0 {
+	} else if xp.isInArray() == true {
 		// We've not encountered a new array but are currently inside a higher
 		// one. Append the current node to it. Since any attributes may be
 		// encapsulated, we defer to our array-management to extract them.
 
 		// Any attributes will be extracted by our array management.
 
-		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
-		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], t)
+		xp.collectForCurrentArray(t)
 	} else {
 		// This is a simple leaf node that is not an array nor underneath an
 		// array. If it has tangible attributes, we'll represent it as a
@@ -248,11 +270,28 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 		return nil
 	}
 
+	if _, ok := xp.lastToken.(xml.StartElement); ok == true {
+		// If a self-closing tag, the parser sublimes directly from the start-
+		// tag to the end-tag and entirely skip the char-data token.
+		// Artificially add it so that we can uniformly process array (where we
+		// need to enumerate all of the inner nodes and it'll help if each item
+		// is three tokens: start, char-data, end).
+
+		emptyCharData := ""
+		xp.lastCharData = &emptyCharData
+	}
+
 	if xp.lastCharData != nil {
 		charData := strings.Trim(*xp.lastCharData, " \t\r\n")
 
 		if t.Name == xmpnamespace.RdfLiTag {
-			if len(xp.unfinishedArrayLayers) == 0 {
+			if xp.isInArray() == true {
+				// This is an array item. Since the value is encapsulated, it will
+				// need to be extracted before parsing. So, we just push the raw
+				// element and defer to our array management to do that.
+
+				xp.collectForCurrentArray(charData)
+			} else {
 				// We encountered an array item under a namespace that we don't
 				// recognize.
 
@@ -262,13 +301,6 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 					nil,
 					"We encountered an array item that wasn't in an array, likely because it is in an unregistered namespace (or because its parent types should have an array type and do not): [%s]",
 					xpn)
-			} else {
-				// This is an array item. Since the value is encapsulated, it will
-				// need to be extracted before parsing. So, we just push the raw
-				// element and defer to our array management to do that.
-
-				currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
-				xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], charData)
 			}
 		} else {
 			err := xp.parseCharData(xpi, t.Name, charData)
@@ -310,7 +342,7 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 
 		xp.unfinishedArrayLayers = xp.unfinishedArrayLayers[:currentUnfinishedLayerNumber]
 
-		if len(xp.unfinishedArrayLayers) > 0 {
+		if xp.isInArray() == true {
 			newUnfinishedLayerNumber := len(xp.unfinishedArrayLayers) - 1
 			xp.unfinishedArrayLayers[newUnfinishedLayerNumber] = append(
 				xp.unfinishedArrayLayers[newUnfinishedLayerNumber],
@@ -324,12 +356,11 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 		err := xpi.addArrayValue(xpn, wrappedArray)
 		log.PanicIf(err)
 
-	} else if len(xp.unfinishedArrayLayers) > 0 {
+	} else if xp.isInArray() == true {
 		// We've not closed an array but are currently inside a higher one.
 		// Append the current node to it.
 
-		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
-		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], t)
+		xp.collectForCurrentArray(t)
 	}
 
 	// Go already validates that the tags are balanced.
@@ -379,12 +410,11 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 		log.Panic(err)
 	}
 
-	if len(xp.unfinishedArrayLayers) > 0 {
+	if xp.isInArray() == true {
 		// We're currently collecting items for an array. Append the char-data
 		// to the collector slice.
 
-		currentLayerNumber := len(xp.unfinishedArrayLayers) - 1
-		xp.unfinishedArrayLayers[currentLayerNumber] = append(xp.unfinishedArrayLayers[currentLayerNumber], parsedValue)
+		xp.collectForCurrentArray(parsedValue)
 	} else {
 		// This is a non-array-item value-node.
 
@@ -499,37 +529,25 @@ func (xp *Parser) parseToken(xpi *XmpPropertyIndex, token xml.Token) (err error)
 		}
 	}()
 
-	// We do our last-token management here since many of the conditionals
-	// below will skip and continue.
-	lastToken := xp.lastToken
-	xp.lastToken = token
-
 	switch t := token.(type) {
 	case xml.StartElement:
 		err := xp.parseStartElementToken(xpi, t)
 		log.PanicIf(err)
 
-		return nil
-
 	case xml.EndElement:
 		err := xp.parseEndElementToken(xpi, t)
 		log.PanicIf(err)
 
-		return nil
-
 	case xml.CharData:
-
-		err := xp.parseCharDataToken(xpi, t, lastToken)
+		err := xp.parseCharDataToken(xpi, t, xp.lastToken)
 		log.PanicIf(err)
-
-		return nil
 
 	case xml.ProcInst:
 		err := xp.parseProcInstToken(xpi, t)
 		log.PanicIf(err)
-
-		return nil
 	}
+
+	xp.lastToken = token
 
 	return nil
 }

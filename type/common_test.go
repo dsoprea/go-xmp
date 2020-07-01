@@ -39,44 +39,6 @@ func registerTestNamespaces() {
 	xmpregistry.Register(namespace)
 }
 
-func getTestSequenceItemsWithoutChardata() []interface{} {
-	arrayName := xml.Name{Space: RdfUri, Local: "Seq"}
-	itemName := xml.Name{Space: RdfUri, Local: "li"}
-
-	attribute1Name := xml.Name{Space: RdfUri, Local: "item1"}
-	attribute2Name := xml.Name{Space: RdfUri, Local: "item2"}
-
-	attributes1 := []xml.Attr{
-		{Name: attribute1Name, Value: "test_value_1"},
-		{Name: attribute2Name, Value: "test_value_2"},
-	}
-
-	// We're deliberately misordering these.
-	attributes2 := []xml.Attr{
-		{Name: attribute1Name, Value: "test_value_4"},
-		{Name: attribute2Name, Value: "test_value_3"},
-	}
-
-	// We're deliberately misordering these.
-	items := []interface{}{
-		xml.StartElement{Name: arrayName},
-		xml.StartElement{Name: itemName, Attr: attributes1},
-		xml.EndElement{Name: itemName},
-		xml.StartElement{Name: itemName, Attr: attributes2},
-		xml.EndElement{Name: itemName},
-		xml.EndElement{Name: arrayName},
-	}
-
-	return items
-}
-
-func getTestSequenceBaseArrayValueWithoutChardata() baseArrayValue {
-	items := getTestSequenceItemsWithoutChardata()
-
-	bav := newBaseArrayValue(testPropertyName, items)
-	return bav
-}
-
 func getTestSequenceItemsWithChardata() []interface{} {
 	arrayName := xml.Name{Space: RdfUri, Local: "Seq"}
 	itemName := xml.Name{Space: RdfUri, Local: "li"}

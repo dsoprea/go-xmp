@@ -7,5 +7,5 @@ go 1.13
 require (
 	github.com/dsoprea/go-logging v0.0.0-20200517223158-a10564966e9d
 	github.com/dsoprea/go-unicode-byteorder v0.0.0-20200615041543-c108ead3af9c
-	github.com/jessevdk/go-flags v1.4.0 // indirect
+	github.com/jessevdk/go-flags v1.4.0
 )

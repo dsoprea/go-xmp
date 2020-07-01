@@ -139,6 +139,14 @@ func TestValidateAnchorElements_Miss_Balanced(t *testing.T) {
 }
 
 func TestValidateAnchorElements_Miss_Unbalanced(t *testing.T) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err := errRaw.(error)
+			log.PrintError(err)
+			t.Fatalf("Test failed.")
+		}
+	}()
+
 	name := xml.Name{Space: RdfUri, Local: "aa"}
 
 	items := []interface{}{
@@ -149,7 +157,7 @@ func TestValidateAnchorElements_Miss_Unbalanced(t *testing.T) {
 	err := validateAnchorElements(items, name)
 	if err == nil {
 		t.Fatalf("Expected error for unbalanced anchor tags.")
-	} else if err.Error() != "expected last element in array to be a tag" {
+	} else if err.Error() != "expected last element in array to be a tag: [string] [some_value]" {
 		log.Panic(err)
 	}
 }
@@ -225,35 +233,6 @@ func TestBaseArrayValue_constructArrayItem_WithChardata(t *testing.T) {
 	}
 }
 
-func TestBaseArrayValue_constructArrayItem_WithoutChardata(t *testing.T) {
-	defer xmpregistry.Clear()
-	registerTestNamespaces()
-
-	bav := getTestSequenceBaseArrayValueWithoutChardata()
-
-	actual, err := bav.constructArrayItem(bav.collected[1:3])
-	log.PanicIf(err)
-
-	itemName := xml.Name{Space: RdfUri, Local: "li"}
-
-	attribute1Name := xml.Name{Space: RdfUri, Local: "item1"}
-	attribute2Name := xml.Name{Space: RdfUri, Local: "item2"}
-
-	extractedAttributes1 := map[xml.Name]interface{}{
-		attribute1Name: "test_value_1",
-		attribute2Name: "test_value_2",
-	}
-
-	expected := ArrayItem{
-		Name:       itemName,
-		Attributes: extractedAttributes1,
-	}
-
-	if reflect.DeepEqual(actual, expected) != true {
-		t.Fatalf("ArrayItem not correct.")
-	}
-}
-
 func TestBaseArrayValue_innerItems_WithChardata(t *testing.T) {
 	defer xmpregistry.Clear()
 	registerTestNamespaces()
@@ -296,46 +275,6 @@ func TestBaseArrayValue_innerItems_WithChardata(t *testing.T) {
 	}
 }
 
-func TestBaseArrayValue_innerItems_WithoutChardata(t *testing.T) {
-	defer xmpregistry.Clear()
-	registerTestNamespaces()
-
-	bav := getTestSequenceBaseArrayValueWithoutChardata()
-
-	actualItems, err := bav.innerItems(false)
-	log.PanicIf(err)
-
-	itemName := xml.Name{Space: RdfUri, Local: "li"}
-
-	attribute1Name := xml.Name{Space: RdfUri, Local: "item1"}
-	attribute2Name := xml.Name{Space: RdfUri, Local: "item2"}
-
-	extractedAttributes1 := map[xml.Name]interface{}{
-		attribute1Name: "test_value_1",
-		attribute2Name: "test_value_2",
-	}
-
-	extractedAttributes2 := map[xml.Name]interface{}{
-		attribute1Name: "test_value_4",
-		attribute2Name: "test_value_3",
-	}
-
-	expectedItems := []ArrayItem{
-		{
-			Name:       itemName,
-			Attributes: extractedAttributes1,
-		},
-		{
-			Name:       itemName,
-			Attributes: extractedAttributes2,
-		},
-	}
-
-	if reflect.DeepEqual(actualItems, expectedItems) != true {
-		t.Fatalf("innerItems() not correct.")
-	}
-}
-
 // Ordered array
 
 func TestNewOrderedArrayValue(t *testing.T) {
@@ -362,10 +301,18 @@ func TestOrderedArrayValue_String(t *testing.T) {
 }
 
 func TestOrderedArrayValue_Items(t *testing.T) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err := errRaw.(error)
+			log.PrintError(err)
+			t.Fatalf("Test failed.")
+		}
+	}()
+
 	defer xmpregistry.Clear()
 	registerTestNamespaces()
 
-	bav := getTestSequenceBaseArrayValueWithoutChardata()
+	bav := getTestSequenceBaseArrayValueWithChardata()
 	oav := newOrderedArrayValue(bav)
 
 	actualItems, err := oav.Items()
@@ -390,10 +337,12 @@ func TestOrderedArrayValue_Items(t *testing.T) {
 		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
+			CharData:   "value2",
 		},
 		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
+			CharData:   "value1",
 		},
 	}
 
@@ -403,12 +352,20 @@ func TestOrderedArrayValue_Items(t *testing.T) {
 }
 
 func TestOrderedArrayFieldType_New(t *testing.T) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err := errRaw.(error)
+			log.PrintError(err)
+			t.Fatalf("Test failed.")
+		}
+	}()
+
 	defer xmpregistry.Clear()
 	registerTestNamespaces()
 
 	oaft := OrderedArrayFieldType{}
 
-	items := getTestSequenceItemsWithoutChardata()
+	items := getTestSequenceItemsWithChardata()
 	av := oaft.New(testPropertyName, items)
 
 	actualItems, err := av.(OrderedArrayValue).Items()
@@ -433,10 +390,12 @@ func TestOrderedArrayFieldType_New(t *testing.T) {
 		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
+			CharData:   "value2",
 		},
 		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
+			CharData:   "value1",
 		},
 	}
 
@@ -451,7 +410,7 @@ func TestOrderedResourceEventArrayValue_Items(t *testing.T) {
 	defer xmpregistry.Clear()
 	registerTestNamespaces()
 
-	bav := getTestSequenceBaseArrayValueWithoutChardata()
+	bav := getTestSequenceBaseArrayValueWithChardata()
 	oav := newOrderedArrayValue(bav)
 
 	oreav := OrderedResourceEventArrayValue{
@@ -493,7 +452,7 @@ func TestOrderedResourceEventArrayFieldType_New(t *testing.T) {
 	defer xmpregistry.Clear()
 	registerTestNamespaces()
 
-	items := getTestSequenceItemsWithoutChardata()
+	items := getTestSequenceItemsWithChardata()
 
 	oreaft := OrderedResourceEventArrayFieldType{}
 	av := oreaft.New(testPropertyName, items)
@@ -524,10 +483,12 @@ func TestOrderedResourceEventArrayFieldType_New(t *testing.T) {
 		{
 			Name:       itemName,
 			Attributes: extractedAttributes1,
+			CharData:   "value2",
 		},
 		{
 			Name:       itemName,
 			Attributes: extractedAttributes2,
+			CharData:   "value1",
 		},
 	}
 

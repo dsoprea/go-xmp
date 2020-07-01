@@ -211,7 +211,7 @@ func (bav baseArrayValue) constructArrayItem(subslice []interface{}) (ai ArrayIt
 	}()
 
 	subsliceLen := len(subslice)
-	if subsliceLen != 2 && subsliceLen != 3 {
+	if subsliceLen != 3 {
 		log.Panicf("sublice length is not valid: (%d)", subsliceLen)
 	}
 
@@ -334,7 +334,7 @@ func (oav OrderedArrayValue) Items() (items []ArrayItem, err error) {
 	err = validateAnchorElements(oav.baseArrayValue.collected, rdfSeqTag)
 	log.PanicIf(err)
 
-	items, err = oav.innerItems(false)
+	items, err = oav.innerItems(true)
 	log.PanicIf(err)
 
 	return items, nil

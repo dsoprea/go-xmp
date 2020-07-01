@@ -396,12 +396,26 @@ func (xp *Parser) parseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, rawVal
 		log.Panic(err)
 	}
 
+	// Since we ensure that all leaf nodes have char-data we'll periodically end-
+	// up with char-data that is empty for nodes in namespaces that don't
+	// identify that node with a type. In this case, just silently skip.
+	if rawValue == "" && namespace.Fields[localName] == nil {
+		return nil
+	}
+
 	parsedValue, err := xmptype.ParseValue(namespace, localName, rawValue)
 	if err != nil {
-		if err == xmptype.ErrChildFieldNotFound || err == xmptype.ErrValueNotValid {
+		if err == xmptype.ErrChildFieldNotFound {
 			parseLogger.Warningf(
 				nil,
-				"Could not parse char-data under node [%s] [%s] value: [%s]",
+				"Could not parse char-data under node [%s] [%s] value (field not found): [%s]",
+				namespaceUri, localName, rawValue)
+
+			return nil
+		} else if err == xmptype.ErrValueNotValid {
+			parseLogger.Warningf(
+				nil,
+				"Could not parse char-data under node [%s] [%s] value (value not valid): [%s]",
 				namespaceUri, localName, rawValue)
 
 			return nil

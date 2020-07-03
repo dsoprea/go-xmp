@@ -335,7 +335,7 @@ func TestXmpPropertyIndex_addValue_One_OneLevel(t *testing.T) {
 	}
 
 	expected := map[string][]interface{}{
-		"[?]test_name": []interface{}{someValue},
+		"[?]test_name": {someValue},
 	}
 
 	if reflect.DeepEqual(xpi.leaves, expected) != true {
@@ -401,7 +401,7 @@ func TestXmpPropertyIndex_addValue_One_MultipleLevel(t *testing.T) {
 	}
 
 	expected := map[string][]interface{}{
-		"[?]test_name2": []interface{}{someValue},
+		"[?]test_name2": {someValue},
 	}
 
 	if reflect.DeepEqual(subindex.leaves, expected) != true {
@@ -467,9 +467,9 @@ func TestXmpPropertyIndex_addValue_Multiple_OneLevel(t *testing.T) {
 	log.PanicIf(err)
 
 	expected := map[string][]interface{}{
-		"[?]node1": []interface{}{someValue1},
-		"[?]node2": []interface{}{someValue2},
-		"[?]node3": []interface{}{someValue3},
+		"[?]node1": {someValue1},
+		"[?]node2": {someValue2},
+		"[?]node3": {someValue3},
 	}
 
 	if reflect.DeepEqual(xpi.leaves, expected) != true {

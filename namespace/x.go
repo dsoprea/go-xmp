@@ -10,6 +10,7 @@ const (
 )
 
 var (
+	// XNamespace is the namespace descriptor for "x".
 	XNamespace = xmpregistry.Namespace{
 		Uri:             XUri,
 		PreferredPrefix: "x",

@@ -33,6 +33,9 @@ var (
 		Local: "li",
 	}
 
+	// RdfNamespace is the namespace descriptor for "rdf". We do not define any
+	// fields for it because it defined no leaf nodes [that we have encountered]
+	// and therefore we require no parsing and no knowledge of types.
 	RdfNamespace = xmpregistry.Namespace{
 		Uri:             RdfUri,
 		PreferredPrefix: "rdf",

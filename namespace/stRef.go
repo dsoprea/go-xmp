@@ -12,6 +12,7 @@ const (
 )
 
 var (
+	// StRefNamespace is the namespace descriptor for "stRef".
 	StRefNamespace = xmpregistry.Namespace{
 		Uri:             StRefUri,
 		PreferredPrefix: "stRef",

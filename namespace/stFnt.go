@@ -15,6 +15,7 @@ const (
 // defined, so using "Text" instead.
 
 var (
+	// StFntNamespace is the namespace descriptor for "stFnt".
 	StFntNamespace = xmpregistry.Namespace{
 		Uri:             StFntUri,
 		PreferredPrefix: "stFnt",

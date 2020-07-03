@@ -11,6 +11,7 @@ const (
 )
 
 var (
+	// ClaroNamespace is the namespace descriptor for "claro".
 	ClaroNamespace = xmpregistry.Namespace{
 		Uri:             ClaroUri,
 		PreferredPrefix: "claro",

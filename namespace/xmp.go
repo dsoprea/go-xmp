@@ -11,6 +11,7 @@ const (
 )
 
 var (
+	// XmpNamespace is the namespace descriptor for "xmp".
 	XmpNamespace = xmpregistry.Namespace{
 		Uri:             XmpUri,
 		PreferredPrefix: "xmp",

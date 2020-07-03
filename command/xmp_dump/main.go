@@ -18,9 +18,10 @@ var (
 )
 
 type parameters struct {
-	Filepath    string `short:"f" long:"filepath" required:"true" description:"File-path of image"`
-	PrintAsJson bool   `short:"j" long:"json" description:"Print out as JSON"`
-	IsVerbose   bool   `short:"v" long:"verbose" description:"Print logging"`
+	Filepath            string `short:"f" long:"filepath" required:"true" description:"File-path of image"`
+	PrintAsJson         bool   `short:"j" long:"json" description:"Print out as JSON"`
+	IsVerbose           bool   `short:"v" long:"verbose" description:"Print logging"`
+	DoNotSimplifyExport bool   `short:"n" long:"no-simplify" description:"If exporting, return the raw, unsimplified structure"`
 }
 
 var (
@@ -63,7 +64,9 @@ func main() {
 	log.PanicIf(err)
 
 	if arguments.PrintAsJson == true {
-		flat, err := xpi.Export()
+		doSimplify := arguments.DoNotSimplifyExport == false
+
+		flat, err := xpi.Export(doSimplify)
 		log.PanicIf(err)
 
 		encoded, err := json.MarshalIndent(flat, "", "  ")

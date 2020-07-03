@@ -49,7 +49,7 @@ func newXmpPropertyIndex(nodeName xmpregistry.XmlName) *XmpPropertyIndex {
 	return xpi
 }
 
-func (xpi *XmpPropertyIndex) exportValue(value interface{}) (encoded interface{}, err error) {
+func (xpi *XmpPropertyIndex) exportValue(value interface{}, doPrintSimplified bool) (encoded interface{}, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -73,28 +73,36 @@ func (xpi *XmpPropertyIndex) exportValue(value interface{}) (encoded interface{}
 				attributes[namePhrase] = value
 			}
 
-			var encodedComplex map[string]interface{}
-
 			if len(attributes) > 0 {
 				// If there are attributes, then only include the char-data if
 				// non-empty. Very frequently, values expressed as attributes
 				// are not paired with char-data. So, that just adds pollution
 				// to the output.
 
-				encodedComplex = map[string]interface{}{
+				encodedComplex := map[string]interface{}{
 					"Attributes": attributes,
 				}
 
 				if ai.CharData != "" {
 					encodedComplex["CharData"] = ai.CharData
+
+					distilled[i] = encodedComplex
+				} else {
+					if doPrintSimplified == true {
+						distilled[i] = attributes
+					} else {
+						distilled[i] = encodedComplex
+					}
 				}
 			} else {
-				encodedComplex = map[string]interface{}{
-					"CharData": ai.CharData,
+				if doPrintSimplified == true {
+					distilled[i] = ai.CharData
+				} else {
+					distilled[i] = map[string]interface{}{
+						"CharData": ai.CharData,
+					}
 				}
 			}
-
-			distilled[i] = encodedComplex
 		}
 
 		return distilled, nil
@@ -120,7 +128,7 @@ func (xpi *XmpPropertyIndex) exportValue(value interface{}) (encoded interface{}
 	panic(nil)
 }
 
-func (xpi *XmpPropertyIndex) export(xmp xmpregistry.XmpPropertyName) (exported map[string]interface{}, err error) {
+func (xpi *XmpPropertyIndex) export(xmp xmpregistry.XmpPropertyName, doPrintSimplified bool) (exported map[string]interface{}, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -134,7 +142,7 @@ func (xpi *XmpPropertyIndex) export(xmp xmpregistry.XmpPropertyName) (exported m
 	for _, subindex := range xpi.subindices {
 		currentXpn := append(xmp, xpi.nodeName)
 
-		currentExported, err := subindex.export(currentXpn)
+		currentExported, err := subindex.export(currentXpn, doPrintSimplified)
 		log.PanicIf(err)
 
 		exportedKey := subindex.nodeName.String()
@@ -145,7 +153,7 @@ func (xpi *XmpPropertyIndex) export(xmp xmpregistry.XmpPropertyName) (exported m
 	for key, values := range xpi.leaves {
 		encodedValues := make([]interface{}, len(values))
 		for i, value := range values {
-			encodedValue, err := xpi.exportValue(value)
+			encodedValue, err := xpi.exportValue(value, doPrintSimplified)
 			if err != nil {
 				mainLogger.Errorf(nil, err, "%s: Had trouble enumerating array items under leaf (%d).", key, i)
 				log.Panic(err)
@@ -160,7 +168,21 @@ func (xpi *XmpPropertyIndex) export(xmp xmpregistry.XmpPropertyName) (exported m
 	return exported, nil
 }
 
-func (xpi *XmpPropertyIndex) Export() (exported map[string]interface{}, err error) {
+// Export returns the indexed XMP values as a simple data-structure. It may be
+// used to print structured output (e.g. JSON).
+//
+// SIMPLIFICATION
+//
+// The values will be maps that may have an "Attributes" field, "CharData"
+// field, or both, but this will be further flattened if `doPrintSimplified` is
+// true: if attributes are present but not char-data, then just replace this
+// with the attributes map; if char-data is present but not attributes then
+// just replace this with the char-data string. More often than not, the
+// simplified structure for a given particular namespace should be consistent
+// enough that tools can make assumptions about this structure, though they may
+// need to be tolerant of rare inconsistencies. Still, this makes for a more
+// digestable format for both humans and machine.
+func (xpi *XmpPropertyIndex) Export(doPrintSimplified bool) (exported map[string]interface{}, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -171,7 +193,7 @@ func (xpi *XmpPropertyIndex) Export() (exported map[string]interface{}, err erro
 
 	rootXpn := make(xmpregistry.XmpPropertyName, 0)
 
-	exported, err = xpi.export(rootXpn)
+	exported, err = xpi.export(rootXpn, doPrintSimplified)
 	log.PanicIf(err)
 
 	return exported, nil

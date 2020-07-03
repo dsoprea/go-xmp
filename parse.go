@@ -246,27 +246,16 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 
 	// TODO(dustin): Expand the unit-tests.
 
-	if t.Name == xmpnamespace.RdfTag {
-		if xp.rdfIsOpen == false {
-			log.Panicf("RDF is not open")
-		} else if xp.rdfDescriptionIsOpen != false {
-			log.Panicf("RDF document node closed before description node closed")
-		}
+	isRootRdfTag, err := xp.processNodeCloseRootRdfTags(xpi, t.Name)
+	log.PanicIf(err)
 
-		xp.rdfIsOpen = false
+	if isRootRdfTag == true {
+		// We're sitting on an XMP document RDF boundary tag. Skip.
 
 		return nil
-	} else if t.Name == xmpnamespace.RdfDescriptionTag {
-		if xp.rdfDescriptionIsOpen == false {
-			log.Panicf("RDF description is not open")
-		}
+	} else if xp.rdfDescriptionIsOpen == false {
+		// We're outside of the XMP space.
 
-		xp.rdfDescriptionIsOpen = false
-
-		return nil
-	}
-
-	if xp.rdfDescriptionIsOpen == false {
 		return nil
 	}
 
@@ -282,30 +271,8 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 	}
 
 	if xp.lastCharData != nil {
-		charData := strings.Trim(*xp.lastCharData, " \t\r\n")
-
-		if t.Name == xmpnamespace.RdfLiTag {
-			if xp.isInArray() == true {
-				// This is an array item. Since the value is encapsulated, it will
-				// need to be extracted before parsing. So, we just push the raw
-				// element and defer to our array management to do that.
-
-				xp.collectForCurrentArray(charData)
-			} else {
-				// We encountered an array item under a namespace that we don't
-				// recognize.
-
-				xpn := xmpregistry.XmpPropertyName(xp.nameStack)
-
-				parseLogger.Warningf(
-					nil,
-					"We encountered an array item that wasn't in an array, likely because it is in an unregistered namespace (or because its parent types should have an array type and do not): [%s]",
-					xpn)
-			}
-		} else {
-			err := xp.parseCharData(xpi, t.Name, charData)
-			log.PanicIf(err)
-		}
+		err := xp.processNodeCloseCharData(xpi, t.Name, *xp.lastCharData)
+		log.PanicIf(err)
 
 		xp.lastCharData = nil
 	}
@@ -332,30 +299,8 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 	if arrayType != nil {
 		// We're closing an array.
 
-		currentUnfinishedLayerNumber := len(xp.unfinishedArrayLayers) - 1
-		finishedArray := xp.unfinishedArrayLayers[currentUnfinishedLayerNumber]
-
-		ea := EmbeddedArray{
-			name:      t.Name,
-			collected: finishedArray,
-		}
-
-		xp.unfinishedArrayLayers = xp.unfinishedArrayLayers[:currentUnfinishedLayerNumber]
-
-		if xp.isInArray() == true {
-			newUnfinishedLayerNumber := len(xp.unfinishedArrayLayers) - 1
-			xp.unfinishedArrayLayers[newUnfinishedLayerNumber] = append(
-				xp.unfinishedArrayLayers[newUnfinishedLayerNumber],
-				ea)
-		}
-
-		xpn := xmpregistry.XmpPropertyName(xp.nameStack)
-
-		wrappedArray := arrayType.New(xpn, finishedArray)
-
-		err := xpi.addArrayValue(xpn, wrappedArray)
+		err := xp.processNodeCloseArrayClose(xpi, t.Name, arrayType)
 		log.PanicIf(err)
-
 	} else if xp.isInArray() == true {
 		// We've not closed an array but are currently inside a higher one.
 		// Append the current node to it.
@@ -365,6 +310,111 @@ func (xp *Parser) parseEndElementToken(xpi *XmpPropertyIndex, t xml.EndElement) 
 
 	// Go already validates that the tags are balanced.
 	xp.nameStack = xp.nameStack[:len(xp.nameStack)-1]
+
+	return nil
+}
+
+func (xp *Parser) processNodeCloseRootRdfTags(xpi *XmpPropertyIndex, nodeName xml.Name) (hit bool, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	// TODO(dustin): Add test
+
+	if nodeName == xmpnamespace.RdfTag {
+		if xp.rdfIsOpen == false {
+			log.Panicf("RDF is not open")
+		} else if xp.rdfDescriptionIsOpen != false {
+			log.Panicf("RDF document node closed before description node closed")
+		}
+
+		xp.rdfIsOpen = false
+
+		return true, nil
+	} else if nodeName == xmpnamespace.RdfDescriptionTag {
+		if xp.rdfDescriptionIsOpen == false {
+			log.Panicf("RDF description is not open")
+		}
+
+		xp.rdfDescriptionIsOpen = false
+
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (xp *Parser) processNodeCloseCharData(xpi *XmpPropertyIndex, nodeName xml.Name, charData string) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	// TODO(dustin): Add test
+
+	charData = strings.Trim(charData, " \t\r\n")
+
+	if nodeName == xmpnamespace.RdfLiTag {
+		if xp.isInArray() == true {
+			// This is an array item. Since the value is encapsulated, it will
+			// need to be extracted before parsing. So, we just push the raw
+			// element and defer to our array management to do that.
+
+			xp.collectForCurrentArray(charData)
+		} else {
+			// We encountered an array item under a namespace that we don't
+			// recognize.
+
+			xpn := xmpregistry.XmpPropertyName(xp.nameStack)
+
+			parseLogger.Warningf(
+				nil,
+				"We encountered an array item that wasn't in an array, likely because it is in an unregistered namespace (or because its parent types should have an array type and do not): [%s]",
+				xpn)
+		}
+	} else {
+		err := xp.parseCharData(xpi, nodeName, charData)
+		log.PanicIf(err)
+	}
+
+	return nil
+}
+
+func (xp *Parser) processNodeCloseArrayClose(xpi *XmpPropertyIndex, nodeName xml.Name, arrayType xmptype.ArrayFieldType) (err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	// TODO(dustin): Add test
+
+	currentUnfinishedLayerNumber := len(xp.unfinishedArrayLayers) - 1
+	finishedArray := xp.unfinishedArrayLayers[currentUnfinishedLayerNumber]
+
+	ea := EmbeddedArray{
+		name:      nodeName,
+		collected: finishedArray,
+	}
+
+	xp.unfinishedArrayLayers = xp.unfinishedArrayLayers[:currentUnfinishedLayerNumber]
+
+	if xp.isInArray() == true {
+		newUnfinishedLayerNumber := len(xp.unfinishedArrayLayers) - 1
+		xp.unfinishedArrayLayers[newUnfinishedLayerNumber] = append(
+			xp.unfinishedArrayLayers[newUnfinishedLayerNumber],
+			ea)
+	}
+
+	xpn := xmpregistry.XmpPropertyName(xp.nameStack)
+
+	wrappedArray := arrayType.New(xpn, finishedArray)
+
+	err = xpi.addArrayValue(xpn, wrappedArray)
+	log.PanicIf(err)
 
 	return nil
 }

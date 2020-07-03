@@ -1,7 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
+
+	"encoding/json"
 
 	"github.com/dsoprea/go-logging"
 	"github.com/jessevdk/go-flags"
@@ -15,9 +18,9 @@ var (
 )
 
 type parameters struct {
-	Filepath string `short:"f" long:"filepath" required:"true" description:"File-path of image"`
-	//	PrintAsJson bool   `short:"j" long:"json" description:"Print out as JSON"`
-	IsVerbose bool `short:"v" long:"verbose" description:"Print logging"`
+	Filepath    string `short:"f" long:"filepath" required:"true" description:"File-path of image"`
+	PrintAsJson bool   `short:"j" long:"json" description:"Print out as JSON"`
+	IsVerbose   bool   `short:"v" long:"verbose" description:"Print logging"`
 }
 
 var (
@@ -58,6 +61,18 @@ func main() {
 
 	xpi, err := xp.Parse()
 	log.PanicIf(err)
+
+	if arguments.PrintAsJson == true {
+		flat, err := xpi.Export()
+		log.PanicIf(err)
+
+		encoded, err := json.MarshalIndent(flat, "", "  ")
+		log.PanicIf(err)
+
+		fmt.Println(string(encoded))
+
+		return
+	}
 
 	xpi.Dump()
 }

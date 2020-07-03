@@ -85,11 +85,20 @@ type ArrayValue interface {
 	Count() int
 }
 
+// ArrayItemLister supports enumerating the items of the array. This is the
+// default enumeration mode for arrays.
+type ArrayItemLister interface {
+	// Items returns the items.
+	Items() (items []ArrayItem, err error)
+}
+
 // ArrayStringValueLister is any array type that has an Items() method that
-// returns a string slice.
+// returns a string slice. This is an alternative to ArrayItemLister that is
+// generally preferred if the items are simple strings, as this makes it simpler
+// to access them as long at the type has taken the steps to support this.
 type ArrayStringValueLister interface {
-	// Items returns a slice of strings.
-	Items() (items []string, err error)
+	// StringItems returns a slice of strings.
+	StringItems() (items []string, err error)
 }
 
 // ArrayFieldType is satisfied by all array field-types..
@@ -358,11 +367,11 @@ type OrderedTextArrayValue struct {
 	OrderedArrayValue
 }
 
-// Items this is a wrapper that returns a simple list of strings from inner
-// underlying array-items, thereby satisfying the ArrayStringValueLister
+// StringItems this is a wrapper that returns a simple list of strings from
+// inner underlying array-items, thereby satisfying the ArrayStringValueLister
 // interface. In the case of these, we return a stringification of the
 // attributes.
-func (otav OrderedTextArrayValue) Items() (items []string, err error) {
+func (otav OrderedTextArrayValue) StringItems() (items []string, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -406,11 +415,11 @@ type OrderedResourceEventArrayValue struct {
 	OrderedArrayValue
 }
 
-// Items this is a wrapper that returns a simple list of strings from inner
-// underlying array-items, thereby satisfying the ArrayStringValueLister
+// StringItems this is a wrapper that returns a simple list of strings from
+// inner underlying array-items, thereby satisfying the ArrayStringValueLister
 // interface. In the case of these, we return a stringification of the
 // attributes.
-func (oreav OrderedResourceEventArrayValue) Items() (items []string, err error) {
+func (oreav OrderedResourceEventArrayValue) StringItems() (items []string, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -498,10 +507,10 @@ type UnorderedTextArrayValue struct {
 	UnorderedArrayValue
 }
 
-// Items this is a wrapper that returns a simple list of strings from inner
-// underlying array-items, thereby satisfying the ArrayStringValueLister
+// StringItems this is a wrapper that returns a simple list of strings from
+// inner underlying array-items, thereby satisfying the ArrayStringValueLister
 // interface.
-func (utav UnorderedTextArrayValue) Items() (items []string, err error) {
+func (utav UnorderedTextArrayValue) StringItems() (items []string, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -540,10 +549,10 @@ type UnorderedAncestorArrayValue struct {
 	UnorderedArrayValue
 }
 
-// Items this is a wrapper that returns a simple list of strings from inner
-// underlying array-items, thereby satisfying the ArrayStringValueLister
+// StringItems this is a wrapper that returns a simple list of strings from
+// inner underlying array-items, thereby satisfying the ArrayStringValueLister
 // interface.
-func (uaav UnorderedAncestorArrayValue) Items() (items []string, err error) {
+func (uaav UnorderedAncestorArrayValue) StringItems() (items []string, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))
@@ -630,10 +639,10 @@ type LanguageAlternativeArrayValue struct {
 	AlternativeArrayValue
 }
 
-// Items this is a wrapper that returns a simple list of strings from inner
-// underlying array-items, thereby satisfying the ArrayStringValueLister
+// StringItems this is a wrapper that returns a simple list of strings from
+// inner underlying array-items, thereby satisfying the ArrayStringValueLister
 // interface.
-func (laav LanguageAlternativeArrayValue) Items() (items []string, err error) {
+func (laav LanguageAlternativeArrayValue) StringItems() (items []string, err error) {
 	defer func() {
 		if errRaw := recover(); errRaw != nil {
 			err = log.Wrap(errRaw.(error))

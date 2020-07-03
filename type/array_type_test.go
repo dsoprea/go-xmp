@@ -404,7 +404,7 @@ func TestOrderedArrayFieldType_New(t *testing.T) {
 	}
 }
 
-// OrderedResourceEvent
+// Ordered ResourceEvent array
 
 func TestOrderedResourceEventArrayValue_Items(t *testing.T) {
 	defer xmpregistry.Clear()
@@ -417,7 +417,74 @@ func TestOrderedResourceEventArrayValue_Items(t *testing.T) {
 		OrderedArrayValue: oav,
 	}
 
-	actual, err := oreav.Items()
+	// Test base Items() implementation.
+
+	actualItems, err := oreav.OrderedArrayValue.Items()
+	log.PanicIf(err)
+
+	itemName := xml.Name{Space: RdfUri, Local: "li"}
+
+	attribute1Name := xml.Name{Space: RdfUri, Local: "item1"}
+	attribute2Name := xml.Name{Space: RdfUri, Local: "item2"}
+
+	extractedAttributes1 := map[xml.Name]interface{}{
+		attribute1Name: "test_value_1",
+		attribute2Name: "test_value_2",
+	}
+
+	extractedAttributes2 := map[xml.Name]interface{}{
+		attribute1Name: "test_value_4",
+		attribute2Name: "test_value_3",
+	}
+
+	expectedItems := []ArrayItem{
+		{
+			Name:       itemName,
+			Attributes: extractedAttributes1,
+			CharData:   "value2",
+		},
+		{
+			Name:       itemName,
+			Attributes: extractedAttributes2,
+			CharData:   "value1",
+		},
+	}
+
+	if reflect.DeepEqual(actualItems, expectedItems) != true {
+		fmt.Printf("Actual:\n")
+		fmt.Printf("\n")
+
+		for _, item := range actualItems {
+			fmt.Printf("%s\n", item)
+		}
+
+		fmt.Printf("\n")
+
+		fmt.Printf("Expected:\n")
+		fmt.Printf("\n")
+
+		for _, item := range expectedItems {
+			fmt.Printf("%s\n", item)
+		}
+
+		fmt.Printf("\n")
+
+		t.Fatalf("Items not correct.")
+	}
+}
+
+func TestOrderedResourceEventArrayValue_StringItems(t *testing.T) {
+	defer xmpregistry.Clear()
+	registerTestNamespaces()
+
+	bav := getTestSequenceBaseArrayValueWithChardata()
+	oav := newOrderedArrayValue(bav)
+
+	oreav := OrderedResourceEventArrayValue{
+		OrderedArrayValue: oav,
+	}
+
+	actual, err := oreav.StringItems()
 	log.PanicIf(err)
 
 	expected := []string{
@@ -458,8 +525,6 @@ func TestOrderedResourceEventArrayFieldType_New(t *testing.T) {
 	av := oreaft.New(testPropertyName, items)
 
 	oreav := av.(OrderedResourceEventArrayValue)
-
-	// Test base Items() implementation.
 
 	actualItems, err := oreav.OrderedArrayValue.Items()
 	log.PanicIf(err)
@@ -503,18 +568,48 @@ func TestOrderedResourceEventArrayFieldType_New(t *testing.T) {
 
 		t.Fatalf("Items not correct.")
 	}
+}
 
-	// Test type-specific Items() implementation.
+// Ordered text array
 
-	actualStrings, err := oreav.Items()
-	log.PanicIf(err)
+func TestOrderedTextArrayValue_StringItems(t *testing.T) {
+	defer xmpregistry.Clear()
+	registerTestNamespaces()
 
-	expectedStrings := []string{
-		"[rdf]item1=[test_value_1] [rdf]item2=[test_value_2]",
-		"[rdf]item1=[test_value_4] [rdf]item2=[test_value_3]",
+	bav := getTestSequenceBaseArrayValueWithChardata()
+	oav := newOrderedArrayValue(bav)
+
+	otav := OrderedTextArrayValue{
+		OrderedArrayValue: oav,
 	}
 
-	if reflect.DeepEqual(actualStrings, expectedStrings) != true {
+	actual, err := otav.StringItems()
+	log.PanicIf(err)
+
+	expected := []string{
+		"value2",
+		"value1",
+	}
+
+	if reflect.DeepEqual(actual, expected) != true {
+		fmt.Printf("Actual:\n")
+		fmt.Printf("\n")
+
+		for _, item := range actual {
+			fmt.Printf("%s\n", item)
+		}
+
+		fmt.Printf("\n")
+
+		fmt.Printf("Expected:\n")
+		fmt.Printf("\n")
+
+		for _, item := range expected {
+			fmt.Printf("%s\n", item)
+		}
+
+		fmt.Printf("\n")
+
 		t.Fatalf("Items not correct.")
 	}
 }
@@ -632,6 +727,8 @@ func TestUnorderedArrayFieldType_New(t *testing.T) {
 	}
 }
 
+// Unordered ancestor array
+
 func TestUnorderedAncestorArrayFieldType_New(t *testing.T) {
 	defer xmpregistry.Clear()
 	registerTestNamespaces()
@@ -687,10 +784,109 @@ func TestUnorderedAncestorArrayFieldType_New(t *testing.T) {
 
 		t.Fatalf("Items() not correct.")
 	}
+}
 
-	// Test type-specific Items() implementation.
+func TestUnorderedAncestorArrayValue_Items(t *testing.T) {
+	defer xmpregistry.Clear()
+	registerTestNamespaces()
 
-	actualStrings, err := uaav.Items()
+	uaaft := UnorderedAncestorArrayFieldType{}
+
+	items := getTestBagItemsWithChardata()
+	av := uaaft.New(testPropertyName, items)
+
+	uaav := av.(UnorderedAncestorArrayValue)
+
+	// Test base Items() implementation.
+
+	actualItems, err := uaav.UnorderedArrayValue.Items()
+	log.PanicIf(err)
+
+	itemName := xml.Name{Space: RdfUri, Local: "li"}
+
+	attribute1Name := xml.Name{Space: RdfUri, Local: "item1"}
+	attribute2Name := xml.Name{Space: RdfUri, Local: "item2"}
+
+	extractedAttributes1 := map[xml.Name]interface{}{
+		attribute1Name: "test_value_1",
+		attribute2Name: "test_value_2",
+	}
+
+	extractedAttributes2 := map[xml.Name]interface{}{
+		attribute1Name: "test_value_4",
+		attribute2Name: "test_value_3",
+	}
+
+	expectedItems := []ArrayItem{
+		{
+			Name:       itemName,
+			Attributes: extractedAttributes1,
+			CharData:   "value2",
+		},
+		{
+			Name:       itemName,
+			Attributes: extractedAttributes2,
+			CharData:   "value1",
+		},
+	}
+
+	if reflect.DeepEqual(actualItems, expectedItems) != true {
+		for _, ai := range actualItems {
+			fmt.Printf("ACTUAL: %s\n", ai)
+		}
+
+		for _, ai := range expectedItems {
+			fmt.Printf("EXPECTED: %s\n", ai)
+		}
+
+		t.Fatalf("Items() not correct.")
+	}
+}
+
+func TestUnorderedAncestorArrayValue_StringItems(t *testing.T) {
+	defer xmpregistry.Clear()
+	registerTestNamespaces()
+
+	uaaft := UnorderedAncestorArrayFieldType{}
+
+	items := getTestBagItemsWithChardata()
+	av := uaaft.New(testPropertyName, items)
+
+	uaav := av.(UnorderedAncestorArrayValue)
+
+	actualStrings, err := uaav.StringItems()
+	log.PanicIf(err)
+
+	expectedStrings := []string{
+		"value2",
+		"value1",
+	}
+
+	if reflect.DeepEqual(actualStrings, expectedStrings) != true {
+		for _, s := range actualStrings {
+			fmt.Printf("ACTUAL> %s\n", s)
+		}
+
+		for _, s := range expectedStrings {
+			fmt.Printf("EXPECTED> %s\n", s)
+		}
+
+		t.Fatalf("Items not correct.")
+	}
+}
+
+func TestUnorderedTextArrayValue_StringItems(t *testing.T) {
+	defer xmpregistry.Clear()
+	registerTestNamespaces()
+
+	utaft := UnorderedTextArrayFieldType{}
+
+	items := getTestBagItemsWithChardata()
+	av := utaft.New(testPropertyName, items)
+
+	utav := av.(UnorderedTextArrayValue)
+
+	actualStrings, err := utav.StringItems()
 	log.PanicIf(err)
 
 	expectedStrings := []string{
@@ -837,7 +1033,77 @@ func TestLanguageAlternativeArrayValue_Items(t *testing.T) {
 		AlternativeArrayValue: aav,
 	}
 
-	actual, err := laav.Items()
+	// Test base Items() implementation.
+
+	actualItems, err := laav.Items()
+	log.PanicIf(err)
+
+	rdfLiName := xml.Name{Space: RdfUri, Local: "li"}
+	rdfItem1 := xml.Name{Space: RdfUri, Local: "item1"}
+	rdfItem2 := xml.Name{Space: RdfUri, Local: "item2"}
+
+	ai1 := ArrayItem{
+		Name: rdfLiName,
+
+		Attributes: map[xml.Name]interface{}{
+			rdfItem1: "test_value_1",
+			rdfItem2: "test_value_2",
+		},
+
+		CharData: "value2",
+	}
+
+	ai2 := ArrayItem{
+		Name: rdfLiName,
+
+		Attributes: map[xml.Name]interface{}{
+			rdfItem1: "test_value_4",
+			rdfItem2: "test_value_3",
+		},
+
+		CharData: "value1",
+	}
+
+	expectedItems := []ArrayItem{
+		ai1,
+		ai2,
+	}
+
+	if reflect.DeepEqual(actualItems, expectedItems) != true {
+		fmt.Printf("Actual:\n")
+		fmt.Printf("\n")
+
+		for _, item := range actualItems {
+			fmt.Printf("%s\n", item)
+		}
+
+		fmt.Printf("\n")
+
+		fmt.Printf("Expected:\n")
+		fmt.Printf("\n")
+
+		for _, item := range expectedItems {
+			fmt.Printf("%s\n", item)
+		}
+
+		fmt.Printf("\n")
+
+		t.Fatalf("Items not correct.")
+	}
+}
+
+func TestLanguageAlternativeArrayValue_StringItems(t *testing.T) {
+	defer xmpregistry.Clear()
+	registerTestNamespaces()
+
+	bav := getTestAltBaseArrayValueWithChardata()
+	aav := newAlternativeArrayValue(bav)
+
+	laav := LanguageAlternativeArrayValue{
+		AlternativeArrayValue: aav,
+	}
+
+	actual, err := laav.StringItems()
 	log.PanicIf(err)
 
 	expected := []string{
@@ -920,37 +1186,6 @@ func TestLanguageAlternativeArrayFieldType_New(t *testing.T) {
 		for _, ai := range expectedItems {
 			fmt.Printf("EXPECTED: %s\n", ai)
 		}
-
-		t.Fatalf("Items not correct.")
-	}
-
-	// Test type-specific Items() implementation.
-	actual, err := laav.Items()
-	log.PanicIf(err)
-
-	expected := []string{
-		"{[rdf]item1=[test_value_1] [rdf]item2=[test_value_2]} [value2]",
-		"{[rdf]item1=[test_value_4] [rdf]item2=[test_value_3]} [value1]",
-	}
-
-	if reflect.DeepEqual(actual, expected) != true {
-		fmt.Printf("Actual:\n")
-		fmt.Printf("\n")
-
-		for _, item := range actual {
-			fmt.Printf("%s\n", item)
-		}
-
-		fmt.Printf("\n")
-
-		fmt.Printf("Expected:\n")
-		fmt.Printf("\n")
-
-		for _, item := range expected {
-			fmt.Printf("%s\n", item)
-		}
-
-		fmt.Printf("\n")
 
 		t.Fatalf("Items not correct.")
 	}

@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	indexLogger = log.NewLogger("xmp.index")
+	mainLogger = log.NewLogger("xmp.main")
 )
 
 var (
@@ -47,6 +47,134 @@ func newXmpPropertyIndex(nodeName xmpregistry.XmlName) *XmpPropertyIndex {
 	}
 
 	return xpi
+}
+
+func (xpi *XmpPropertyIndex) exportValue(value interface{}) (encoded interface{}, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	// TODO(dustin): Add test
+
+	if ail, ok := value.(xmptype.ArrayItemLister); ok == true {
+		items, err := ail.Items()
+		log.PanicIf(err)
+
+		ail = ail
+
+		distilled := make([]interface{}, len(items))
+		for i, ai := range items {
+			attributes := make(map[string]interface{})
+
+			for name, value := range ai.Attributes {
+				namePhrase := xmpregistry.XmlName(name).String()
+				attributes[namePhrase] = value
+			}
+
+			var encodedComplex map[string]interface{}
+
+			if len(attributes) > 0 {
+				// If there are attributes, then only include the char-data if
+				// non-empty. Very frequently, values expressed as attributes
+				// are not paired with char-data. So, that just adds pollution
+				// to the output.
+
+				encodedComplex = map[string]interface{}{
+					"Attributes": attributes,
+				}
+
+				if ai.CharData != "" {
+					encodedComplex["CharData"] = ai.CharData
+				}
+			} else {
+				encodedComplex = map[string]interface{}{
+					"CharData": ai.CharData,
+				}
+			}
+
+			distilled[i] = encodedComplex
+		}
+
+		return distilled, nil
+	} else if sl, ok := value.(xmptype.ArrayStringValueLister); ok == true {
+		items, err := sl.StringItems()
+		log.PanicIf(err)
+
+		return items, nil
+	} else if sln, ok := value.(ScalarLeafNode); ok == true {
+		return sln.ParsedValue, nil
+	} else if cln, ok := value.(ComplexLeafNode); ok == true {
+		exported := make(map[string]interface{})
+
+		for name, value := range cln {
+			namePhrase := xmpregistry.XmlName(name).String()
+			exported[namePhrase] = value
+		}
+
+		return exported, nil
+	}
+
+	log.Panicf("can not dump unhandled value: [%v]", reflect.TypeOf(value))
+	panic(nil)
+}
+
+func (xpi *XmpPropertyIndex) export(xmp xmpregistry.XmpPropertyName) (exported map[string]interface{}, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	// TODO(dustin): Add test
+
+	exported = make(map[string]interface{})
+
+	for _, subindex := range xpi.subindices {
+		currentXpn := append(xmp, xpi.nodeName)
+
+		currentExported, err := subindex.export(currentXpn)
+		log.PanicIf(err)
+
+		exportedKey := subindex.nodeName.String()
+
+		exported[exportedKey] = currentExported
+	}
+
+	for key, values := range xpi.leaves {
+		encodedValues := make([]interface{}, len(values))
+		for i, value := range values {
+			encodedValue, err := xpi.exportValue(value)
+			if err != nil {
+				mainLogger.Errorf(nil, err, "%s: Had trouble enumerating array items under leaf (%d).", key, i)
+				log.Panic(err)
+			}
+
+			encodedValues[i] = encodedValue
+		}
+
+		exported[key] = encodedValues
+	}
+
+	return exported, nil
+}
+
+func (xpi *XmpPropertyIndex) Export() (exported map[string]interface{}, err error) {
+	defer func() {
+		if errRaw := recover(); errRaw != nil {
+			err = log.Wrap(errRaw.(error))
+		}
+	}()
+
+	// TODO(dustin): Add test
+
+	rootXpn := make(xmpregistry.XmpPropertyName, 0)
+
+	exported, err = xpi.export(rootXpn)
+	log.PanicIf(err)
+
+	return exported, nil
 }
 
 func (xpi *XmpPropertyIndex) addValue(xpn xmpregistry.XmpPropertyName, value interface{}) (err error) {
@@ -214,7 +342,7 @@ func (xpi *XmpPropertyIndex) dump(prefix []string) {
 
 		for i, value := range values {
 			if sl, ok := value.(xmptype.ArrayStringValueLister); ok == true {
-				items, err := sl.Items()
+				items, err := sl.StringItems()
 				if err != nil {
 					fmt.Printf("%s: Had trouble enumerating array items under leaf (%d).\n\n", fqNamePhrase, i)
 					log.Panic(err)

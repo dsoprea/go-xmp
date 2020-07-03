@@ -1,10 +1,7 @@
 [![Build Status](https://travis-ci.com/dsoprea/go-xmp.svg?branch=master)](https://travis-ci.com/dsoprea/go-xmp)
-[![Coverage Status](https://coveralls.io/repos/github/dsoprea/go-xmp/badge.svg?branch=master)](https://coveralls.io/github/dsoprea/go-xmp?branch=master)
+[![codecov](https://codecov.io/gh/dsoprea/go-xmp/branch/master/graph/badge.svg)](https://codecov.io/gh/dsoprea/go-xmp)
 [![Go Report Card](https://goreportcard.com/badge/github.com/dsoprea/go-xmp)](https://goreportcard.com/report/github.com/dsoprea/go-xmp)
 [![GoDoc](https://godoc.org/github.com/dsoprea/go-xmp?status.svg)](https://godoc.org/github.com/dsoprea/go-xmp)
-
-
-*There is currently a bug in Coveralls that is displaying a reduced coverage percentage.*
 
 
 # Overview

@@ -4,6 +4,9 @@
 [![GoDoc](https://godoc.org/github.com/dsoprea/go-xmp?status.svg)](https://godoc.org/github.com/dsoprea/go-xmp)
 
 
+*There is currently a bug in Coveralls that is displaying a reduced coverage percentage.*
+
+
 # Overview
 
 This library manages reading and writing XMP data and is written in pure Go. All
